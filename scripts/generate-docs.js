@@ -96,41 +96,6 @@ const fullHtml = `<!DOCTYPE html>
             margin: 0 auto;
         }
 
-        .nav {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-
-        .nav h3 {
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-        }
-
-        .nav ul {
-            list-style: none;
-            display: grid;
-            gap: 0.5rem;
-        }
-
-        .nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            padding: 0.5rem 0.75rem;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            display: block;
-        }
-
-        .nav a:hover {
-            color: var(--accent);
-            background-color: var(--code-bg);
-        }
-
         .content {
             background: var(--bg-secondary);
             border-radius: 12px;
@@ -294,18 +259,6 @@ const fullHtml = `<!DOCTYPE html>
             <p>A powerful REST API service for extracting content from web pages using CSS selectors</p>
         </header>
 
-        <nav class="nav">
-            <h3>📚 Quick Navigation</h3>
-            <ul>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#api-endpoints">API Endpoints</a></li>
-                <li><a href="#error-handling">Error Handling</a></li>
-                <li><a href="#common-use-cases">Use Cases</a></li>
-                <li><a href="#development">Development</a></li>
-                <li><a href="#examples-with-different-websites">Examples</a></li>
-            </ul>
-        </nav>
-
         <main class="content">
             ${htmlContent}
         </main>
@@ -350,20 +303,6 @@ const fullHtml = `<!DOCTYPE html>
                 } catch (err) {
                     button.textContent = 'Failed';
                     setTimeout(() => button.textContent = 'Copy', 2000);
-                }
-            });
-        });
-
-        // Add smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
                 }
             });
         });
