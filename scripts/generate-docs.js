@@ -372,13 +372,13 @@ const fullHtml = `<!DOCTYPE html>
 </html>`;
 
 // Ensure docs directory exists
-const docsDir = path.join(process.cwd(), 'docs');
-if (!fs.existsSync(docsDir)) {
-    fs.mkdirSync(docsDir);
+const publishPath = path.join(process.cwd(), 'public');
+if (!fs.existsSync(publishPath)) {
+    fs.mkdirSync(publishPath);
 }
 
 // Write the HTML file
-const outputPath = path.join(docsDir, 'index.html');
+const outputPath = path.join(publishPath, 'index.html');
 fs.writeFileSync(outputPath, fullHtml);
 
 console.log('✅ Documentation generated successfully!');
