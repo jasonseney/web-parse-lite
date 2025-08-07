@@ -45,21 +45,16 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
+      // In development, serve the generated docs instead of trying to build a React app
+      const publicPath = path.resolve(import.meta.dirname, "..", "public");
+      const docsTemplate = path.resolve(publicPath, "index.html");
 
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      if (fs.existsSync(docsTemplate)) {
+        const template = await fs.promises.readFile(docsTemplate, "utf-8");
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } else {
+        res.status(404).send("Documentation not found. Run 'node scripts/generate-docs.js' to generate it.");
+      }
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
