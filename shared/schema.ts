@@ -2,12 +2,6 @@ import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
 export const requestLogs = pgTable("request_logs", {
   id: serial("id").primaryKey(),
   parseUrl: text("parse_url").notNull(),
@@ -18,11 +12,6 @@ export const requestLogs = pgTable("request_logs", {
   responseLength: integer("response_length"),
   errorMessage: text("error_message"),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
 });
 
 export const insertRequestLogSchema = createInsertSchema(requestLogs).omit({
@@ -47,8 +36,6 @@ export const parseRequestSchema = z.object({
   path: ["extra"]
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
 export type InsertRequestLog = z.infer<typeof insertRequestLogSchema>;
 export type RequestLog = typeof requestLogs.$inferSelect;
 export type ParseRequest = z.infer<typeof parseRequestSchema>;
