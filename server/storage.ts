@@ -41,47 +41,34 @@ export class ReplitDbStorage implements IStorage {
 
   async getRecentRequests(limit: number = 10): Promise<RequestLog[]> {
     try {
-      // Get all keys from the database
+      // Get all keys
       const allKeysResponse = await this.db.list();
-      console.log('Raw keys response:', allKeysResponse);
-
-      if (!allKeysResponse) {
-        console.log('No keys found in database');
-        return [];
-      }
-
-      // Handle the response format - it could be a string or an object with value array
-      let allKeys: string[] = [];
-      if (typeof allKeysResponse === 'string') {
-        allKeys = allKeysResponse.split('\n').filter(key => key.trim() !== '');
-      } else if (allKeysResponse && typeof allKeysResponse === 'object' && 'value' in allKeysResponse) {
-        // Handle the object format: { ok: true, value: [...] }
-        allKeys = Array.isArray(allKeysResponse.value) ? allKeysResponse.value : [];
-      } else {
-        console.log('Unexpected keys response format:', allKeysResponse);
-        return [];
-      }
-
-      // Filter for log keys
+      const allKeys = allKeysResponse?.value || [];
       const logKeys = allKeys.filter(key => key.startsWith(this.logPrefix));
-
-      if (logKeys.length === 0) {
-        console.log('No log keys found. Available keys:', allKeys);
-        return [];
-      }
-
+      
       console.log(`Found ${logKeys.length} log keys:`, logKeys);
 
       // Fetch all logs
       const logs: RequestLog[] = [];
       for (const key of logKeys) {
         try {
-          const log = await this.db.get(key);
-          if (log && typeof log === 'object' && 'id' in log && 'timestamp' in log) {
-            logs.push({
-              ...log as RequestLog,
-              timestamp: new Date(log.timestamp)
-            });
+          const logData = await this.db.get(key);
+          console.log(`Raw log data for ${key}:`, logData);
+          
+          if (logData) {
+            // Just use the data as-is, convert timestamp to Date object
+            const log: RequestLog = {
+              id: logData.id,
+              parseUrl: logData.parseUrl,
+              selector: logData.selector,
+              method: logData.method,
+              extra: logData.extra,
+              success: logData.success,
+              responseLength: logData.responseLength,
+              errorMessage: logData.errorMessage,
+              timestamp: new Date(logData.timestamp)
+            };
+            logs.push(log);
           }
         } catch (error) {
           console.error(`Failed to fetch log for key ${key}:`, error);
