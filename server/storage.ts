@@ -21,6 +21,7 @@ export class ReplitDbStorage implements IStorage {
 
   async logRequest(insertLog: InsertRequestLog): Promise<RequestLog> {
     const timestamp = Date.now();
+    const key = this.logKey(timestamp);
     const log: RequestLog = { 
       id: timestamp, // Use timestamp as ID for simplicity
       parseUrl: insertLog.parseUrl,
@@ -33,29 +34,35 @@ export class ReplitDbStorage implements IStorage {
       timestamp: new Date(timestamp)
     };
     
-    await this.db.set(this.logKey(timestamp), log);
+    console.log(`Storing log with key: ${key}`, log);
+    await this.db.set(key, log);
+    console.log(`Successfully stored log with key: ${key}`);
     return log;
   }
 
   async getRecentRequests(limit: number = 10): Promise<RequestLog[]> {
     try {
-      // Use prefix method to get only log keys
-      const logKeysString = await this.db.prefix(this.logPrefix);
+      // Get all keys from the database
+      const allKeysString = await this.db.list();
+      console.log('Raw keys response:', allKeysString);
       
-      if (!logKeysString) {
-        console.log('No request logs found');
+      if (!allKeysString) {
+        console.log('No keys found in database');
         return [];
       }
 
       // Parse the response - it's a string with keys separated by newlines
-      const logKeys = logKeysString.split('\n').filter(key => key.trim() !== '');
+      const allKeys = allKeysString.split('\n').filter(key => key.trim() !== '');
+      
+      // Filter for log keys
+      const logKeys = allKeys.filter(key => key.startsWith(this.logPrefix));
       
       if (logKeys.length === 0) {
-        console.log('No request logs found after parsing');
+        console.log('No log keys found. Available keys:', allKeys);
         return [];
       }
 
-      console.log(`Found ${logKeys.length} log keys`);
+      console.log(`Found ${logKeys.length} log keys:`, logKeys);
 
       // Fetch all logs
       const logs: RequestLog[] = [];
