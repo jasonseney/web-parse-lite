@@ -255,12 +255,12 @@
 <p>A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.</p>
 <h2>Features</h2>
 <ul>
-<li>Extract text content from web pages</li>
-<li>Extract HTML content with tags</li>
-<li>Extract specific attributes from HTML elements</li>
-<li>Request logging and monitoring</li>
-<li>Built-in error handling and validation</li>
-<li>Health check endpoint</li>
+<li><strong>Multiple Extraction Methods</strong>: Extract text content, HTML content with tags, or specific element attributes</li>
+<li><strong>Flexible Response Formats</strong>: Get results as JSON arrays for structured data processing or plain text for simple use cases</li>
+<li><strong>CSS Selector Support</strong>: Use any valid CSS selector to target specific elements</li>
+<li><strong>Robust Error Handling</strong>: Comprehensive validation, timeout handling, and network error management</li>
+<li><strong>Request Logging</strong>: Built-in monitoring with detailed logs of all API requests</li>
+<li><strong>Business Logic Separation</strong>: Clean architecture with separated service layer for maintainability</li>
 </ul>
 <h2>API Endpoints</h2>
 <h3>Parse HTML Content</h3>
@@ -271,7 +271,8 @@
   &quot;parseURL&quot;: &quot;https://example.com&quot;,
   &quot;selector&quot;: &quot;section .content p a&quot;,
   &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;href&quot;
+  &quot;extra&quot;: &quot;href&quot;,
+  &quot;format&quot;: &quot;json&quot;
 }
 </code></pre>
 <p><strong>Parameters:</strong></p>
@@ -280,11 +281,16 @@
 <li><code>selector</code> (string, required): CSS selector to target elements</li>
 <li><code>method</code> (string, required): Extraction method - <code>&quot;text&quot;</code>, <code>&quot;html&quot;</code>, or <code>&quot;attribute&quot;</code></li>
 <li><code>extra</code> (string, optional): Required when method is <code>&quot;attribute&quot;</code> - specifies which attribute to extract</li>
+<li><code>format</code> (string, optional): Response format - <code>&quot;json&quot;</code> or <code>&quot;plaintext&quot;</code> (default: <code>&quot;plaintext&quot;</code>)</li>
 </ul>
 <h4>Response</h4>
-<p>Returns plain text content based on the extraction method.</p>
+<p>Returns content in the specified format:</p>
+<ul>
+<li><strong>JSON format</strong>: Array of strings, each element is a separate match</li>
+<li><strong>Plain text format</strong>: All matches joined with <code>\n\n</code> separator</li>
+</ul>
 <h4>Examples</h4>
-<p><strong>Extract text content:</strong></p>
+<p><strong>Extract text content (plain text format):</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
@@ -293,13 +299,24 @@
     &quot;method&quot;: &quot;text&quot;
   }&#39;
 </code></pre>
+<p><strong>Extract text content (JSON array format):</strong></p>
+<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;parseURL&quot;: &quot;https://example.com&quot;,
+    &quot;selector&quot;: &quot;h1, p&quot;,
+    &quot;method&quot;: &quot;text&quot;,
+    &quot;format&quot;: &quot;json&quot;
+  }&#39;
+</code></pre>
 <p><strong>Extract HTML content:</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
     &quot;selector&quot;: &quot;.storylink&quot;,
-    &quot;method&quot;: &quot;html&quot;
+    &quot;method&quot;: &quot;html&quot;,
+    &quot;format&quot;: &quot;json&quot;
   }&#39;
 </code></pre>
 <p><strong>Extract attributes (e.g., links):</strong></p>
@@ -309,7 +326,8 @@
     &quot;parseURL&quot;: &quot;https://example.com&quot;,
     &quot;selector&quot;: &quot;a&quot;,
     &quot;method&quot;: &quot;attribute&quot;,
-    &quot;extra&quot;: &quot;href&quot;
+    &quot;extra&quot;: &quot;href&quot;,
+    &quot;format&quot;: &quot;json&quot;
   }&#39;
 </code></pre>
 <h3>Get Request Logs</h3>
@@ -343,12 +361,53 @@
 }
 </code></pre>
 <h2>Error Handling</h2>
-<p>The API returns appropriate HTTP status codes:</p>
+<p>The API provides comprehensive error handling with appropriate HTTP status codes:</p>
 <ul>
-<li><code>200</code> - Success</li>
-<li><code>400</code> - Bad request (validation errors, parsing errors)</li>
-<li><code>500</code> - Internal server error</li>
+<li><strong>200 Success</strong>: Request processed successfully</li>
+<li><strong>400 Bad Request</strong>: <ul>
+<li>Validation errors (invalid URL, missing required fields)</li>
+<li>Parsing errors (no elements found matching selector)</li>
+<li>Network errors (timeout, DNS resolution failed)</li>
+<li>Method-specific errors (missing <code>extra</code> parameter for attribute extraction)</li>
 </ul>
+</li>
+<li><strong>500 Internal Server Error</strong>: Unexpected server-side issues</li>
+</ul>
+<p>Error responses include descriptive messages to help diagnose issues:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: &quot;No elements found matching selector: .nonexistent-class&quot;
+}
+</code></pre>
+<h2>Common Use Cases</h2>
+<h3>Web Scraping for AI Agents</h3>
+<p>Perfect for AI agents that need to extract structured data from websites:</p>
+<pre><code class="language-json">{
+  &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
+  &quot;selector&quot;: &quot;.storylink&quot;,
+  &quot;method&quot;: &quot;text&quot;,
+  &quot;format&quot;: &quot;json&quot;
+}
+</code></pre>
+<h3>Content Monitoring</h3>
+<p>Extract specific content for monitoring changes:</p>
+<pre><code class="language-json">{
+  &quot;parseURL&quot;: &quot;https://example.com/status&quot;,
+  &quot;selector&quot;: &quot;.status-indicator&quot;,
+  &quot;method&quot;: &quot;attribute&quot;,
+  &quot;extra&quot;: &quot;class&quot;,
+  &quot;format&quot;: &quot;json&quot;
+}
+</code></pre>
+<h3>Link Extraction</h3>
+<p>Gather all links from a webpage:</p>
+<pre><code class="language-json">{
+  &quot;parseURL&quot;: &quot;https://example.com&quot;,
+  &quot;selector&quot;: &quot;a[href^=&#39;https://&#39;]&quot;,
+  &quot;method&quot;: &quot;attribute&quot;,
+  &quot;extra&quot;: &quot;href&quot;,
+  &quot;format&quot;: &quot;json&quot;
+}
+</code></pre>
 <p>Error responses include descriptive messages:</p>
 <pre><code class="language-json">{
   &quot;error&quot;: &quot;No elements found matching selector: .nonexistent&quot;

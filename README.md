@@ -5,12 +5,12 @@ A REST API service that extracts content from web pages using CSS selectors. Bui
 
 ## Features
 
-- Extract text content from web pages
-- Extract HTML content with tags
-- Extract specific attributes from HTML elements
-- Request logging and monitoring
-- Built-in error handling and validation
-- Health check endpoint
+- **Multiple Extraction Methods**: Extract text content, HTML content with tags, or specific element attributes
+- **Flexible Response Formats**: Get results as JSON arrays for structured data processing or plain text for simple use cases
+- **CSS Selector Support**: Use any valid CSS selector to target specific elements
+- **Robust Error Handling**: Comprehensive validation, timeout handling, and network error management
+- **Request Logging**: Built-in monitoring with detailed logs of all API requests
+- **Business Logic Separation**: Clean architecture with separated service layer for maintainability
 
 ## API Endpoints
 
@@ -27,7 +27,8 @@ Extract content from a webpage using CSS selectors.
   "parseURL": "https://example.com",
   "selector": "section .content p a",
   "method": "attribute",
-  "extra": "href"
+  "extra": "href",
+  "format": "json"
 }
 ```
 
@@ -36,14 +37,17 @@ Extract content from a webpage using CSS selectors.
 - `selector` (string, required): CSS selector to target elements
 - `method` (string, required): Extraction method - `"text"`, `"html"`, or `"attribute"`
 - `extra` (string, optional): Required when method is `"attribute"` - specifies which attribute to extract
+- `format` (string, optional): Response format - `"json"` or `"plaintext"` (default: `"plaintext"`)
 
 #### Response
 
-Returns plain text content based on the extraction method.
+Returns content in the specified format:
+- **JSON format**: Array of strings, each element is a separate match
+- **Plain text format**: All matches joined with `\n\n` separator
 
 #### Examples
 
-**Extract text content:**
+**Extract text content (plain text format):**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
@@ -54,6 +58,18 @@ curl -X POST http://localhost:5000/api/parse \
   }'
 ```
 
+**Extract text content (JSON array format):**
+```bash
+curl -X POST http://localhost:5000/api/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parseURL": "https://example.com",
+    "selector": "h1, p",
+    "method": "text",
+    "format": "json"
+  }'
+```
+
 **Extract HTML content:**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
@@ -61,7 +77,8 @@ curl -X POST http://localhost:5000/api/parse \
   -d '{
     "parseURL": "https://news.ycombinator.com",
     "selector": ".storylink",
-    "method": "html"
+    "method": "html",
+    "format": "json"
   }'
 ```
 
@@ -73,7 +90,8 @@ curl -X POST http://localhost:5000/api/parse \
     "parseURL": "https://example.com",
     "selector": "a",
     "method": "attribute",
-    "extra": "href"
+    "extra": "href",
+    "format": "json"
   }'
 ```
 
@@ -118,11 +136,59 @@ Check if the service is running.
 
 ## Error Handling
 
-The API returns appropriate HTTP status codes:
+The API provides comprehensive error handling with appropriate HTTP status codes:
 
-- `200` - Success
-- `400` - Bad request (validation errors, parsing errors)
-- `500` - Internal server error
+- **200 Success**: Request processed successfully
+- **400 Bad Request**: 
+  - Validation errors (invalid URL, missing required fields)
+  - Parsing errors (no elements found matching selector)
+  - Network errors (timeout, DNS resolution failed)
+  - Method-specific errors (missing `extra` parameter for attribute extraction)
+- **500 Internal Server Error**: Unexpected server-side issues
+
+Error responses include descriptive messages to help diagnose issues:
+```json
+{
+  "error": "No elements found matching selector: .nonexistent-class"
+}
+```
+
+## Common Use Cases
+
+### Web Scraping for AI Agents
+Perfect for AI agents that need to extract structured data from websites:
+```json
+{
+  "parseURL": "https://news.ycombinator.com",
+  "selector": ".storylink",
+  "method": "text",
+  "format": "json"
+}
+```
+
+### Content Monitoring
+Extract specific content for monitoring changes:
+```json
+{
+  "parseURL": "https://example.com/status",
+  "selector": ".status-indicator",
+  "method": "attribute",
+  "extra": "class",
+  "format": "json"
+}
+```
+
+### Link Extraction
+Gather all links from a webpage:
+```json
+{
+  "parseURL": "https://example.com",
+  "selector": "a[href^='https://']",
+  "method": "attribute",
+  "extra": "href",
+  "format": "json"
+}
+```
 
 Error responses include descriptive messages:
 

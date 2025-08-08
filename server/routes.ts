@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { parseRequestSchema, type ParseRequest } from "@shared/schema";
 import { z } from "zod";
-import * as cheerio from "cheerio";
+import { htmlParserService, HtmlParserService } from "./services/htmlParserService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // HTML Parser API endpoint
@@ -31,57 +31,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send(`Validation error: ${errorMessage}`);
       }
 
-      const { parseURL, selector, method, extra } = validationResult.data;
+      const { parseURL, selector, method, extra, format } = validationResult.data;
 
       try {
-        // Fetch the webpage with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-        const response = await fetch(parseURL, {
-          signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; HTMLParserAPI/1.0)'
-          }
+        // Use the business logic service to parse the webpage
+        const parseResult = await htmlParserService.parseWebpage({
+          parseURL,
+          selector,
+          method,
+          extra,
+          format
         });
-        
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const html = await response.text();
-        const $ = cheerio.load(html);
-
-        let result: string = "";
-        const elements = $(selector);
-
-        if (elements.length === 0) {
-          throw new Error(`No elements found matching selector: ${selector}`);
-        }
-
-        switch (method) {
-          case "text":
-            result = elements.map((_, el) => $(el).text().trim()).get().join("\n\n");
-            break;
-          
-          case "html":
-            result = elements.map((_, el) => $(el).html()).get().join("\n\n");
-            break;
-          
-          case "attribute":
-            if (!extra) {
-              throw new Error("Extra parameter is required for attribute extraction");
-            }
-            result = elements.map((_, el) => $(el).attr(extra) || "").get()
-              .filter(val => val !== "")
-              .join("\n");
-            break;
-          
-          default:
-            throw new Error(`Unsupported method: ${method}`);
-        }
 
         // Log successful request
         await storage.logRequest({
@@ -90,24 +50,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           method: method,
           extra: extra,
           success: true,
-          responseLength: result.length,
+          responseLength: parseResult.responseLength,
           errorMessage: null
         });
 
-        // Return plain text response
-        res.set('Content-Type', 'text/plain');
-        res.send(result);
-
-      } catch (fetchError: any) {
-        let errorMessage = "Unknown error occurred";
-        
-        if (fetchError.name === 'AbortError') {
-          errorMessage = "Request timeout (10 seconds exceeded)";
-        } else if (fetchError.code === 'ENOTFOUND') {
-          errorMessage = "Invalid URL or network error";
-        } else if (fetchError.message) {
-          errorMessage = fetchError.message;
+        // Return response in the appropriate format
+        if (format === "json") {
+          res.set('Content-Type', 'application/json');
+          res.json(parseResult.data);
+        } else {
+          res.set('Content-Type', 'text/plain');
+          res.send(parseResult.data);
         }
+
+      } catch (parseError: any) {
+        const error = HtmlParserService.categorizeError(parseError);
 
         // Log failed request
         await storage.logRequest({
@@ -117,10 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           extra: extra,
           success: false,
           responseLength: null,
-          errorMessage: errorMessage
+          errorMessage: error.message
         });
 
-        res.status(400).send(`Error: ${errorMessage}`);
+        res.status(400).send(`Error: ${error.message}`);
       }
 
     } catch (error: any) {

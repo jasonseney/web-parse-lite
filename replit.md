@@ -14,8 +14,10 @@ The application follows a monorepo structure with separate client and server dir
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript for the REST API server
 - **HTML Parsing**: Cheerio library for server-side DOM manipulation and content extraction
+- **Business Logic**: Separated HTML parsing service layer for better maintainability
 - **Request Processing**: Supports three extraction methods (text, html, attribute) with CSS selector targeting
-- **Error Handling**: Built-in validation using Zod schemas and comprehensive error responses
+- **Response Formats**: JSON array format for structured data and plaintext format for legacy compatibility
+- **Error Handling**: Built-in validation using Zod schemas and comprehensive error responses with categorization
 - **Logging**: Request logging system with success/failure tracking and response metrics
 
 ### Frontend Architecture  

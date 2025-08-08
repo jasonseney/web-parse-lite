@@ -26,6 +26,9 @@ export const parseRequestSchema = z.object({
     errorMap: () => ({ message: "Method must be 'text', 'html', or 'attribute'" })
   }),
   extra: z.string().optional(),
+  format: z.enum(["json", "plaintext"], {
+    errorMap: () => ({ message: "Format must be 'json' or 'plaintext'" })
+  }).default("plaintext"),
 }).refine((data) => {
   if (data.method === "attribute" && !data.extra) {
     return false;
