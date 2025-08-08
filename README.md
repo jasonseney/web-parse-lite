@@ -159,7 +159,6 @@ This service is built with:
 - **TypeScript** - Type safety
 - **Cheerio** - Server-side HTML parsing
 - **Zod** - Request validation
-- **Drizzle ORM** - Database operations
 
 ## Deployment
 
