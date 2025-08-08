@@ -1,4 +1,3 @@
-
 import Database from "@replit/database";
 import { requestLogs, type RequestLog, type InsertRequestLog } from "@shared/schema";
 
@@ -33,7 +32,7 @@ export class ReplitDbStorage implements IStorage {
       errorMessage: insertLog.errorMessage || null,
       timestamp: new Date(timestamp)
     };
-    
+
     console.log(`Storing log with key: ${key}`, log);
     await this.db.set(key, log);
     console.log(`Successfully stored log with key: ${key}`);
@@ -45,7 +44,7 @@ export class ReplitDbStorage implements IStorage {
       // Get all keys from the database
       const allKeysResponse = await this.db.list();
       console.log('Raw keys response:', allKeysResponse);
-      
+
       if (!allKeysResponse) {
         console.log('No keys found in database');
         return [];
@@ -62,10 +61,10 @@ export class ReplitDbStorage implements IStorage {
         console.log('Unexpected keys response format:', allKeysResponse);
         return [];
       }
-      
+
       // Filter for log keys
       const logKeys = allKeys.filter(key => key.startsWith(this.logPrefix));
-      
+
       if (logKeys.length === 0) {
         console.log('No log keys found. Available keys:', allKeys);
         return [];
