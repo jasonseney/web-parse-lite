@@ -56,19 +56,8 @@ export class ReplitDbStorage implements IStorage {
           console.log(`Raw log data for ${key}:`, logData);
           
           if (logData) {
-            // Just use the data as-is, convert timestamp to Date object
-            const log: RequestLog = {
-              id: logData.id,
-              parseUrl: logData.parseUrl,
-              selector: logData.selector,
-              method: logData.method,
-              extra: logData.extra,
-              success: logData.success,
-              responseLength: logData.responseLength,
-              errorMessage: logData.errorMessage,
-              timestamp: new Date(logData.timestamp)
-            };
-            logs.push(log);
+            // Just push the raw data as-is, no type conversion
+            logs.push(logData.value);
           }
         } catch (error) {
           console.error(`Failed to fetch log for key ${key}:`, error);
@@ -77,7 +66,7 @@ export class ReplitDbStorage implements IStorage {
 
       // Sort by timestamp (newest first) and limit results
       return logs
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .sort((a, b) => b.id - a.id) // Sort by ID since it's the timestamp
         .slice(0, limit);
     } catch (error) {
       console.error('Error fetching recent requests:', error);
