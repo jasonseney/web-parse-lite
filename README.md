@@ -25,8 +25,8 @@ Extract content from a webpage using CSS selectors.
 ```json
 {
   "parseURL": "https://example.com",
-  "selector": ".content p",
-  "method": "text",
+  "selector": "section .content p a",
+  "method": "attribute",
   "extra": "href"
 }
 ```
