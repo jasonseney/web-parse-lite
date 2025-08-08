@@ -30,8 +30,14 @@ export class ReplitDbStorage implements IStorage {
   async logRequest(insertLog: InsertRequestLog): Promise<RequestLog> {
     const id = await this.getNextId();
     const log: RequestLog = { 
-      ...insertLog, 
-      id, 
+      id,
+      parseUrl: insertLog.parseUrl,
+      selector: insertLog.selector,
+      method: insertLog.method,
+      extra: insertLog.extra || null,
+      success: insertLog.success,
+      responseLength: insertLog.responseLength || null,
+      errorMessage: insertLog.errorMessage || null,
       timestamp: new Date() 
     };
     
@@ -41,24 +47,24 @@ export class ReplitDbStorage implements IStorage {
 
   async getRecentRequests(limit: number = 10): Promise<RequestLog[]> {
     try {
-      // Get all log keys - the list method returns key names that start with the prefix
-      const keys = await this.db.list(this.logPrefix);
+      // Get all keys and filter for log keys
+      const allKeys = await this.db.list();
+      const logKeys = allKeys.filter(key => 
+        typeof key === 'string' && key.startsWith(this.logPrefix)
+      );
       
-      // Handle case where keys might not be an array or might be empty
-      if (!keys || !Array.isArray(keys) || keys.length === 0) {
-        const keyZ = await this.db.list();
-        console.warn(`No keys available:`, keyZ);
-        
+      if (logKeys.length === 0) {
+        console.log('No request logs found');
         return [];
       }
 
       // Fetch all logs
       const logs: RequestLog[] = [];
-      for (const key of keys) {
+      for (const key of logKeys) {
         try {
           const log = await this.db.get(key);
-          if (log && typeof log === 'object' && 'id' in log) {
-            // Convert timestamp string back to Date object if needed
+          if (log && typeof log === 'object' && 'id' in log && 'timestamp' in log) {
+            // Ensure timestamp is a Date object
             const logWithDate: RequestLog = {
               ...log as RequestLog,
               timestamp: new Date(log.timestamp)
