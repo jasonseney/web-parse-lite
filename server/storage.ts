@@ -43,16 +43,25 @@ export class ReplitDbStorage implements IStorage {
   async getRecentRequests(limit: number = 10): Promise<RequestLog[]> {
     try {
       // Get all keys from the database
-      const allKeysString = await this.db.list();
-      console.log('Raw keys response:', allKeysString);
+      const allKeysResponse = await this.db.list();
+      console.log('Raw keys response:', allKeysResponse);
       
-      if (!allKeysString) {
+      if (!allKeysResponse) {
         console.log('No keys found in database');
         return [];
       }
 
-      // Parse the response - it's a string with keys separated by newlines
-      const allKeys = allKeysString.split('\n').filter(key => key.trim() !== '');
+      // Handle the response format - it could be a string or an object with value array
+      let allKeys: string[] = [];
+      if (typeof allKeysResponse === 'string') {
+        allKeys = allKeysResponse.split('\n').filter(key => key.trim() !== '');
+      } else if (allKeysResponse && typeof allKeysResponse === 'object' && 'value' in allKeysResponse) {
+        // Handle the object format: { ok: true, value: [...] }
+        allKeys = Array.isArray(allKeysResponse.value) ? allKeysResponse.value : [];
+      } else {
+        console.log('Unexpected keys response format:', allKeysResponse);
+        return [];
+      }
       
       // Filter for log keys
       const logKeys = allKeys.filter(key => key.startsWith(this.logPrefix));
