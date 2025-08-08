@@ -1,5 +1,5 @@
 
-import { Database } from "@replit/database";
+import Database from "@replit/database";
 import { requestLogs, type RequestLog, type InsertRequestLog } from "@shared/schema";
 
 export interface IStorage {
