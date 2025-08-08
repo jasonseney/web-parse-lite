@@ -46,6 +46,9 @@ export class ReplitDbStorage implements IStorage {
       
       // Handle case where keys might not be an array or might be empty
       if (!keys || !Array.isArray(keys) || keys.length === 0) {
+        const keyZ = await this.db.list();
+        console.warn(`No keys available:`, keyZ);
+        
         return [];
       }
 
