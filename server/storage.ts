@@ -40,31 +40,42 @@ export class ReplitDbStorage implements IStorage {
   }
 
   async getRecentRequests(limit: number = 10): Promise<RequestLog[]> {
-    // Get all log keys
-    const keys = await this.db.list(this.logPrefix);
-    
-    if (keys.length === 0) {
+    try {
+      // Get all log keys - the list method returns key names that start with the prefix
+      const keys = await this.db.list(this.logPrefix);
+      
+      // Handle case where keys might not be an array or might be empty
+      if (!keys || !Array.isArray(keys) || keys.length === 0) {
+        return [];
+      }
+
+      // Fetch all logs
+      const logs: RequestLog[] = [];
+      for (const key of keys) {
+        try {
+          const log = await this.db.get(key);
+          if (log && typeof log === 'object' && 'id' in log) {
+            // Convert timestamp string back to Date object if needed
+            const logWithDate: RequestLog = {
+              ...log as RequestLog,
+              timestamp: new Date(log.timestamp)
+            };
+            logs.push(logWithDate);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch log for key ${key}:`, error);
+          // Continue processing other keys
+        }
+      }
+
+      // Sort by timestamp (newest first) and limit results
+      return logs
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error fetching recent requests:', error);
       return [];
     }
-
-    // Fetch all logs
-    const logs: RequestLog[] = [];
-    for (const key of keys) {
-      const log = await this.db.get(key);
-      if (log && typeof log === 'object' && 'id' in log) {
-        // Convert timestamp string back to Date object if needed
-        const logWithDate: RequestLog = {
-          ...log as RequestLog,
-          timestamp: new Date(log.timestamp)
-        };
-        logs.push(logWithDate);
-      }
-    }
-
-    // Sort by timestamp (newest first) and limit results
-    return logs
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
   }
 }
 
