@@ -14,6 +14,7 @@
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
+    "@replit/database": "^3.0.1",
     "cheerio": "^1.0.0",
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
