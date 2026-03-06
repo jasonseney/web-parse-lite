@@ -52,8 +52,8 @@ Returns content in the specified format:
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://example.com",
-    "selector": "h1",
+    "parseURL": "https://blog.replit.com",
+    "selector": "h2, h2 ~ p",
     "method": "text"
   }'
 ```
@@ -63,8 +63,8 @@ curl -X POST http://localhost:5000/api/parse \
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://example.com",
-    "selector": "h1, p",
+    "parseURL": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    "selector": "h1, h2, h3",
     "method": "text",
     "format": "json"
   }'
@@ -76,7 +76,7 @@ curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
     "parseURL": "https://news.ycombinator.com",
-    "selector": ".storylink",
+    "selector": ".submission",
     "method": "html",
     "format": "json"
   }'
@@ -87,8 +87,8 @@ curl -X POST http://localhost:5000/api/parse \
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://example.com",
-    "selector": "a",
+    "parseURL": "https://blog.replit.com",
+    "selector": "main a",
     "method": "attribute",
     "extra": "href",
     "format": "json"
