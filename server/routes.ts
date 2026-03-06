@@ -5,19 +5,26 @@ import { parseRequestSchema, type ParseRequest } from "@shared/schema";
 import { z } from "zod";
 import { htmlParserService, HtmlParserService } from "./services/htmlParserService";
 
+function errorStatusCode(type: string): number {
+  switch (type) {
+    case "validation": return 400;
+    case "parsing": return 404;
+    case "network": return 502;
+    case "timeout": return 504;
+    default: return 500;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // HTML Parser API endpoint
   app.post("/api/parse", async (req, res) => {
     try {
-      // Validate request body
       const validationResult = parseRequestSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         const errorMessage = validationResult.error.errors
           .map(err => `${err.path.join('.')}: ${err.message}`)
           .join(", ");
-        
-        // Log failed request
+
         await storage.logRequest({
           parseUrl: req.body.parseURL || "invalid",
           selector: req.body.selector || "invalid",
@@ -27,66 +34,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseLength: null,
           errorMessage: `Validation error: ${errorMessage}`
         });
-        
-        return res.status(400).send(`Validation error: ${errorMessage}`);
+
+        const format = req.body.format || "plaintext";
+        if (format === "json") {
+          return res.status(400).json({
+            success: false,
+            error: { message: errorMessage, type: "validation" }
+          });
+        }
+        return res.status(400).type("text/plain").send(`Validation error: ${errorMessage}`);
       }
 
       const { parseURL, selector, method, extra, format } = validationResult.data;
 
       try {
-        // Use the business logic service to parse the webpage
         const parseResult = await htmlParserService.parseWebpage({
-          parseURL,
-          selector,
-          method,
-          extra,
-          format
+          parseURL, selector, method, extra, format
         });
 
-        // Log successful request
         await storage.logRequest({
           parseUrl: parseURL,
-          selector: selector,
-          method: method,
-          extra: extra,
+          selector, method, extra,
           success: true,
           responseLength: parseResult.responseLength,
           errorMessage: null
         });
 
-        // Return response in the appropriate format
         if (format === "json") {
-          res.set('Content-Type', 'application/json');
-          res.json(parseResult.data);
-        } else {
-          res.set('Content-Type', 'text/plain');
-          res.send(parseResult.data);
+          return res.json({
+            success: true,
+            data: parseResult.data,
+            meta: {
+              selector,
+              method,
+              format,
+              count: Array.isArray(parseResult.data) ? parseResult.data.length : 1
+            }
+          });
         }
+        return res.type("text/plain").send(parseResult.data);
 
       } catch (parseError: any) {
         const error = HtmlParserService.categorizeError(parseError);
+        const status = errorStatusCode(error.type);
 
-        // Log failed request
         await storage.logRequest({
           parseUrl: parseURL,
-          selector: selector,
-          method: method,
-          extra: extra,
+          selector, method, extra,
           success: false,
           responseLength: null,
           errorMessage: error.message
         });
 
-        res.status(400).send(`Error: ${error.message}`);
+        if (format === "json") {
+          return res.status(status).json({
+            success: false,
+            error: { message: error.message, type: error.type }
+          });
+        }
+        return res.status(status).type("text/plain").send(`Error: ${error.message}`);
       }
 
     } catch (error: any) {
       console.error("Parse API error:", error);
-      res.status(500).send("Internal server error");
+      res.status(500).json({
+        success: false,
+        error: { message: "Internal server error", type: "unknown" }
+      });
     }
   });
 
-  // Get recent request logs endpoint (for monitoring/debugging)
   app.get("/api/logs", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -98,10 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Health check endpoint
   app.get("/api/health", (req, res) => {
-    res.json({ 
-      status: "healthy", 
+    res.json({
+      status: "healthy",
       timestamp: new Date().toISOString(),
       service: "HTML Parser API"
     });

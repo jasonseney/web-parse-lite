@@ -253,14 +253,19 @@
         <main class="content">
             <h1>HTML Parser API</h1>
 <p>A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.</p>
+<blockquote>
+<p><strong>Just need the parsing logic?</strong> The core library is available as a standalone npm package:</p>
+<pre><code class="language-bash">npm install web-parse-lite
+</code></pre>
+<p>See the <a href="packages/web-parse-lite/README.md">package documentation</a> for usage as a library in your own project.</p>
+</blockquote>
 <h2>Features</h2>
 <ul>
 <li><strong>Multiple Extraction Methods</strong>: Extract text content, HTML content with tags, or specific element attributes</li>
-<li><strong>Flexible Response Formats</strong>: Get results as JSON arrays for structured data processing or plain text for simple use cases</li>
+<li><strong>Flexible Response Formats</strong>: Structured JSON with response envelope, or plain text for simple use cases</li>
 <li><strong>CSS Selector Support</strong>: Use any valid CSS selector to target specific elements</li>
-<li><strong>Robust Error Handling</strong>: Comprehensive validation, timeout handling, and network error management</li>
+<li><strong>Robust Error Handling</strong>: Typed errors with appropriate HTTP status codes</li>
 <li><strong>Request Logging</strong>: Built-in monitoring with detailed logs of all API requests</li>
-<li><strong>Business Logic Separation</strong>: Clean architecture with separated service layer for maintainability</li>
 </ul>
 <h2>API Endpoints</h2>
 <h3>Parse HTML Content</h3>
@@ -269,62 +274,189 @@
 <h4>Request Body</h4>
 <pre><code class="language-json">{
   &quot;parseURL&quot;: &quot;https://example.com&quot;,
-  &quot;selector&quot;: &quot;section .content p a&quot;,
-  &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;href&quot;,
+  &quot;selector&quot;: &quot;h1&quot;,
+  &quot;method&quot;: &quot;text&quot;,
   &quot;format&quot;: &quot;json&quot;
 }
 </code></pre>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>parseURL</code> (string, required): The URL of the webpage to parse</li>
-<li><code>selector</code> (string, required): CSS selector to target elements</li>
-<li><code>method</code> (string, required): Extraction method - <code>&quot;text&quot;</code>, <code>&quot;html&quot;</code>, or <code>&quot;attribute&quot;</code></li>
-<li><code>extra</code> (string, optional): Required when method is <code>&quot;attribute&quot;</code> - specifies which attribute to extract</li>
-<li><code>format</code> (string, optional): Response format - <code>&quot;json&quot;</code> or <code>&quot;plaintext&quot;</code> (default: <code>&quot;plaintext&quot;</code>)</li>
-</ul>
-<h4>Response</h4>
-<p>Returns content in the specified format:</p>
-<ul>
-<li><strong>JSON format</strong>: Array of strings, each element is a separate match</li>
-<li><strong>Plain text format</strong>: All matches joined with <code>\n\n</code> separator</li>
-</ul>
-<h4>Examples</h4>
-<p><strong>Extract text content (plain text format):</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
-    &quot;selector&quot;: &quot;h2, h2 ~ p&quot;,
-    &quot;method&quot;: &quot;text&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract text content (JSON array format):</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://en.wikipedia.org/wiki/Artificial_intelligence&quot;,
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>parseURL</td>
+<td>string</td>
+<td>Yes</td>
+<td></td>
+<td>URL of the webpage to parse</td>
+</tr>
+<tr>
+<td>selector</td>
+<td>string</td>
+<td>Yes</td>
+<td></td>
+<td>CSS selector to target elements</td>
+</tr>
+<tr>
+<td>method</td>
+<td>string</td>
+<td>Yes</td>
+<td></td>
+<td><code>&quot;text&quot;</code>, <code>&quot;html&quot;</code>, or <code>&quot;attribute&quot;</code></td>
+</tr>
+<tr>
+<td>extra</td>
+<td>string</td>
+<td>If attr</td>
+<td></td>
+<td>Attribute name (required for <code>&quot;attribute&quot;</code> method)</td>
+</tr>
+<tr>
+<td>format</td>
+<td>string</td>
+<td>No</td>
+<td><code>&quot;plaintext&quot;</code></td>
+<td><code>&quot;json&quot;</code> or <code>&quot;plaintext&quot;</code></td>
+</tr>
+</tbody></table>
+<h4>JSON Response Format</h4>
+<p>When <code>format</code> is <code>&quot;json&quot;</code>, responses use a structured envelope:</p>
+<p><strong>Success (200):</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [&quot;First heading&quot;, &quot;Second heading&quot;, &quot;Third heading&quot;],
+  &quot;meta&quot;: {
     &quot;selector&quot;: &quot;h1, h2, h3&quot;,
     &quot;method&quot;: &quot;text&quot;,
-    &quot;format&quot;: &quot;json&quot;
-  }&#39;
+    &quot;format&quot;: &quot;json&quot;,
+    &quot;count&quot;: 3
+  }
+}
 </code></pre>
-<p><strong>Extract HTML content:</strong></p>
+<p><strong>Error:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: {
+    &quot;message&quot;: &quot;No elements found matching selector: .nonexistent&quot;,
+    &quot;type&quot;: &quot;parsing&quot;
+  }
+}
+</code></pre>
+<h4>Plaintext Response Format</h4>
+<p>When <code>format</code> is <code>&quot;plaintext&quot;</code> (default), success responses return raw <code>text/plain</code> with results joined by <code>\n\n</code>. Error responses also return plain text.</p>
+<h4>Status Codes</h4>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>200</td>
+<td>Success</td>
+<td>Content extracted successfully</td>
+</tr>
+<tr>
+<td>400</td>
+<td>Bad Request</td>
+<td>Invalid input (bad URL, missing fields, etc)</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found</td>
+<td>No elements matched the CSS selector</td>
+</tr>
+<tr>
+<td>502</td>
+<td>Bad Gateway</td>
+<td>Failed to fetch the target URL</td>
+</tr>
+<tr>
+<td>504</td>
+<td>Gateway Timeout</td>
+<td>Target URL took too long to respond</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Server Error</td>
+<td>Unexpected internal error</td>
+</tr>
+</tbody></table>
+<h4>Error Types</h4>
+<p>The <code>error.type</code> field in JSON error responses allows programmatic error handling:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>validation</code></td>
+<td>Invalid request parameters</td>
+</tr>
+<tr>
+<td><code>parsing</code></td>
+<td>No elements found for the given selector</td>
+</tr>
+<tr>
+<td><code>network</code></td>
+<td>Failed to reach or fetch the target URL</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>Target URL response exceeded 10 seconds</td>
+</tr>
+<tr>
+<td><code>unknown</code></td>
+<td>Unexpected error</td>
+</tr>
+</tbody></table>
+<h3>Examples</h3>
+<p><strong>Extract text (JSON format):</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-    &quot;selector&quot;: &quot;.submission&quot;,
-    &quot;method&quot;: &quot;html&quot;,
+    &quot;selector&quot;: &quot;.titleline &gt; a&quot;,
+    &quot;method&quot;: &quot;text&quot;,
     &quot;format&quot;: &quot;json&quot;
   }&#39;
 </code></pre>
-<p><strong>Extract attributes (e.g., image links):</strong></p>
+<p><strong>Extract text (plaintext format):</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
-    &quot;selector&quot;: &quot;main img&quot;,
+    &quot;selector&quot;: &quot;h2&quot;,
+    &quot;method&quot;: &quot;text&quot;
+  }&#39;
+</code></pre>
+<p><strong>Extract attributes:</strong></p>
+<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;parseURL&quot;: &quot;https://example.com&quot;,
+    &quot;selector&quot;: &quot;a&quot;,
+    &quot;method&quot;: &quot;attribute&quot;,
+    &quot;extra&quot;: &quot;href&quot;,
+    &quot;format&quot;: &quot;json&quot;
+  }&#39;
+</code></pre>
+<p><strong>Extract image URLs:</strong></p>
+<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;parseURL&quot;: &quot;https://example.com&quot;,
+    &quot;selector&quot;: &quot;img&quot;,
     &quot;method&quot;: &quot;attribute&quot;,
     &quot;extra&quot;: &quot;src&quot;,
     &quot;format&quot;: &quot;json&quot;
@@ -333,144 +465,34 @@
 <h3>Get Request Logs</h3>
 <p><strong>GET</strong> <code>/api/logs?limit=10</code></p>
 <p>Retrieve recent API request logs for monitoring and debugging.</p>
-<h4>Query Parameters</h4>
-<ul>
-<li><code>limit</code> (number, optional): Number of logs to return (default: 10)</li>
-</ul>
-<h4>Response</h4>
-<pre><code class="language-json">[
-  {
-    &quot;id&quot;: 1,
-    &quot;parseUrl&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;h1&quot;,
-    &quot;method&quot;: &quot;text&quot;,
-    &quot;success&quot;: true,
-    &quot;responseLength&quot;: 25,
-    &quot;timestamp&quot;: &quot;2024-01-01T12:00:00Z&quot;
-  }
-]
-</code></pre>
 <h3>Health Check</h3>
 <p><strong>GET</strong> <code>/api/health</code></p>
-<p>Check if the service is running.</p>
-<h4>Response</h4>
-<pre><code class="language-json">{
-  &quot;status&quot;: &quot;healthy&quot;,
-  &quot;timestamp&quot;: &quot;2024-01-01T12:00:00Z&quot;,
-  &quot;service&quot;: &quot;HTML Parser API&quot;
-}
-</code></pre>
-<h2>Error Handling</h2>
-<p>The API provides comprehensive error handling with appropriate HTTP status codes:</p>
-<ul>
-<li><strong>200 Success</strong>: Request processed successfully</li>
-<li><strong>400 Bad Request</strong>: <ul>
-<li>Validation errors (invalid URL, missing required fields)</li>
-<li>Parsing errors (no elements found matching selector)</li>
-<li>Network errors (timeout, DNS resolution failed)</li>
-<li>Method-specific errors (missing <code>extra</code> parameter for attribute extraction)</li>
-</ul>
-</li>
-<li><strong>500 Internal Server Error</strong>: Unexpected server-side issues</li>
-</ul>
-<p>Error responses include descriptive messages to help diagnose issues:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: &quot;No elements found matching selector: .nonexistent-class&quot;
-}
-</code></pre>
+<p>Returns <code>{ &quot;status&quot;: &quot;healthy&quot;, &quot;timestamp&quot;: &quot;...&quot;, &quot;service&quot;: &quot;HTML Parser API&quot; }</code>.</p>
 <h2>Common Use Cases</h2>
-<h3>Web Scraping for AI Agents</h3>
-<p>Perfect for AI agents that need to extract structured data from websites:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-  &quot;selector&quot;: &quot;.storylink&quot;,
-  &quot;method&quot;: &quot;text&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<h3>Content Monitoring</h3>
-<p>Extract specific content for monitoring changes:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://example.com/status&quot;,
-  &quot;selector&quot;: &quot;.status-indicator&quot;,
-  &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;class&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<h3>Link Extraction</h3>
-<p>Gather all links from a webpage:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://example.com&quot;,
-  &quot;selector&quot;: &quot;a[href^=&#39;https://&#39;]&quot;,
-  &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;href&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<p>Error responses include descriptive messages:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: &quot;No elements found matching selector: .nonexistent&quot;
-}
-</code></pre>
-<h2>Common Use Cases</h2>
-<h3>Web Scraping</h3>
-<p>Extract specific content from websites for data analysis or content aggregation.</p>
-<h3>Content Monitoring</h3>
-<p>Monitor changes to specific elements on web pages.</p>
-<h3>Link Extraction</h3>
-<p>Extract all links from a webpage for further processing.</p>
-<h3>Metadata Extraction</h3>
-<p>Extract meta tags, titles, or other structured data from web pages.</p>
-<h2>Rate Limiting &amp; Timeouts</h2>
 <ul>
-<li>Request timeout: 10 seconds</li>
-<li>The service includes a User-Agent header for better compatibility</li>
-<li>All requests are logged for monitoring</li>
+<li><strong>Web Scraping for AI Agents</strong>: Extract structured data from websites as JSON</li>
+<li><strong>Content Monitoring</strong>: Track changes to specific elements on web pages</li>
+<li><strong>Link Extraction</strong>: Gather all links from a webpage for crawling or processing</li>
+<li><strong>Metadata Extraction</strong>: Extract meta tags, titles, or Open Graph data</li>
 </ul>
 <h2>Development</h2>
 <p>This service is built with:</p>
 <ul>
 <li><strong>Express.js</strong> - Web framework</li>
 <li><strong>TypeScript</strong> - Type safety</li>
-<li><strong>Cheerio</strong> - Server-side HTML parsing</li>
+<li><strong><a href="packages/web-parse-lite/">web-parse-lite</a></strong> - Core HTML parsing library (also on npm)</li>
 <li><strong>Zod</strong> - Request validation</li>
 </ul>
-<h2>Deployment</h2>
-<p>The service runs on port 5000 and is ready for deployment on Replit or any Node.js hosting platform.</p>
-<p>To start the service:</p>
 <pre><code class="language-bash">npm run dev    # Development mode
 npm run build  # Build for production
 npm start      # Production mode
 </code></pre>
-<h2>Examples with Different Websites</h2>
-<p><strong>Extract article titles from a news site:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-    &quot;selector&quot;: &quot;.titleline &gt; a&quot;,
-    &quot;method&quot;: &quot;text&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract product prices:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example-store.com/product&quot;,
-    &quot;selector&quot;: &quot;.price&quot;,
-    &quot;method&quot;: &quot;text&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract all image URLs:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;img&quot;,
-    &quot;method&quot;: &quot;attribute&quot;,
-    &quot;extra&quot;: &quot;src&quot;
-  }&#39;
+<h2>Project Structure</h2>
+<pre><code>packages/web-parse-lite/   # Standalone npm package (core parsing logic)
+server/                    # Express.js API service
+shared/                    # Shared schemas and types
+scripts/                   # Documentation generation
+public/                    # Generated API docs
 </code></pre>
 
         </main>

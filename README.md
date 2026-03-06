@@ -3,14 +3,19 @@
 
 A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.
 
+> **Just need the parsing logic?** The core library is available as a standalone npm package:
+> ```bash
+> npm install web-parse-lite
+> ```
+> See the [package documentation](packages/web-parse-lite/README.md) for usage as a library in your own project.
+
 ## Features
 
 - **Multiple Extraction Methods**: Extract text content, HTML content with tags, or specific element attributes
-- **Flexible Response Formats**: Get results as JSON arrays for structured data processing or plain text for simple use cases
+- **Flexible Response Formats**: Structured JSON with response envelope, or plain text for simple use cases
 - **CSS Selector Support**: Use any valid CSS selector to target specific elements
-- **Robust Error Handling**: Comprehensive validation, timeout handling, and network error management
+- **Robust Error Handling**: Typed errors with appropriate HTTP status codes
 - **Request Logging**: Built-in monitoring with detailed logs of all API requests
-- **Business Logic Separation**: Clean architecture with separated service layer for maintainability
 
 ## API Endpoints
 
@@ -25,70 +30,121 @@ Extract content from a webpage using CSS selectors.
 ```json
 {
   "parseURL": "https://example.com",
-  "selector": "section .content p a",
-  "method": "attribute",
-  "extra": "href",
+  "selector": "h1",
+  "method": "text",
   "format": "json"
 }
 ```
 
-**Parameters:**
-- `parseURL` (string, required): The URL of the webpage to parse
-- `selector` (string, required): CSS selector to target elements
-- `method` (string, required): Extraction method - `"text"`, `"html"`, or `"attribute"`
-- `extra` (string, optional): Required when method is `"attribute"` - specifies which attribute to extract
-- `format` (string, optional): Response format - `"json"` or `"plaintext"` (default: `"plaintext"`)
+| Parameter | Type   | Required | Default       | Description                                    |
+| --------- | ------ | -------- | ------------- | ---------------------------------------------- |
+| parseURL  | string | Yes      |               | URL of the webpage to parse                    |
+| selector  | string | Yes      |               | CSS selector to target elements                |
+| method    | string | Yes      |               | `"text"`, `"html"`, or `"attribute"`           |
+| extra     | string | If attr  |               | Attribute name (required for `"attribute"` method) |
+| format    | string | No       | `"plaintext"` | `"json"` or `"plaintext"`                      |
 
-#### Response
+#### JSON Response Format
 
-Returns content in the specified format:
-- **JSON format**: Array of strings, each element is a separate match
-- **Plain text format**: All matches joined with `\n\n` separator
+When `format` is `"json"`, responses use a structured envelope:
 
-#### Examples
-
-**Extract text content (plain text format):**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://blog.replit.com",
-    "selector": "h2, h2 ~ p",
-    "method": "text"
-  }'
-```
-
-**Extract text content (JSON array format):**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+**Success (200):**
+```json
+{
+  "success": true,
+  "data": ["First heading", "Second heading", "Third heading"],
+  "meta": {
     "selector": "h1, h2, h3",
     "method": "text",
-    "format": "json"
-  }'
+    "format": "json",
+    "count": 3
+  }
+}
 ```
 
-**Extract HTML content:**
+**Error:**
+```json
+{
+  "success": false,
+  "error": {
+    "message": "No elements found matching selector: .nonexistent",
+    "type": "parsing"
+  }
+}
+```
+
+#### Plaintext Response Format
+
+When `format` is `"plaintext"` (default), success responses return raw `text/plain` with results joined by `\n\n`. Error responses also return plain text.
+
+#### Status Codes
+
+| Code | Meaning          | When                                         |
+| ---- | ---------------- | -------------------------------------------- |
+| 200  | Success          | Content extracted successfully               |
+| 400  | Bad Request      | Invalid input (bad URL, missing fields, etc) |
+| 404  | Not Found        | No elements matched the CSS selector         |
+| 502  | Bad Gateway      | Failed to fetch the target URL               |
+| 504  | Gateway Timeout  | Target URL took too long to respond          |
+| 500  | Server Error     | Unexpected internal error                    |
+
+#### Error Types
+
+The `error.type` field in JSON error responses allows programmatic error handling:
+
+| Type         | Description                              |
+| ------------ | ---------------------------------------- |
+| `validation` | Invalid request parameters               |
+| `parsing`    | No elements found for the given selector |
+| `network`    | Failed to reach or fetch the target URL  |
+| `timeout`    | Target URL response exceeded 10 seconds  |
+| `unknown`    | Unexpected error                         |
+
+### Examples
+
+**Extract text (JSON format):**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
     "parseURL": "https://news.ycombinator.com",
-    "selector": ".submission",
-    "method": "html",
+    "selector": ".titleline > a",
+    "method": "text",
     "format": "json"
   }'
 ```
 
-**Extract attributes (e.g., image links):**
+**Extract text (plaintext format):**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
     "parseURL": "https://blog.replit.com",
-    "selector": "main img",
+    "selector": "h2",
+    "method": "text"
+  }'
+```
+
+**Extract attributes:**
+```bash
+curl -X POST http://localhost:5000/api/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parseURL": "https://example.com",
+    "selector": "a",
+    "method": "attribute",
+    "extra": "href",
+    "format": "json"
+  }'
+```
+
+**Extract image URLs:**
+```bash
+curl -X POST http://localhost:5000/api/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parseURL": "https://example.com",
+    "selector": "img",
     "method": "attribute",
     "extra": "src",
     "format": "json"
@@ -101,139 +157,39 @@ curl -X POST http://localhost:5000/api/parse \
 
 Retrieve recent API request logs for monitoring and debugging.
 
-#### Query Parameters
-- `limit` (number, optional): Number of logs to return (default: 10)
-
-#### Response
-```json
-[
-  {
-    "id": 1,
-    "parseUrl": "https://example.com",
-    "selector": "h1",
-    "method": "text",
-    "success": true,
-    "responseLength": 25,
-    "timestamp": "2024-01-01T12:00:00Z"
-  }
-]
-```
-
 ### Health Check
 
 **GET** `/api/health`
 
-Check if the service is running.
-
-#### Response
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-01T12:00:00Z",
-  "service": "HTML Parser API"
-}
-```
-
-## Error Handling
-
-The API provides comprehensive error handling with appropriate HTTP status codes:
-
-- **200 Success**: Request processed successfully
-- **400 Bad Request**: 
-  - Validation errors (invalid URL, missing required fields)
-  - Parsing errors (no elements found matching selector)
-  - Network errors (timeout, DNS resolution failed)
-  - Method-specific errors (missing `extra` parameter for attribute extraction)
-- **500 Internal Server Error**: Unexpected server-side issues
-
-Error responses include descriptive messages to help diagnose issues:
-```json
-{
-  "error": "No elements found matching selector: .nonexistent-class"
-}
-```
+Returns `{ "status": "healthy", "timestamp": "...", "service": "HTML Parser API" }`.
 
 ## Common Use Cases
 
-### Web Scraping for AI Agents
-Perfect for AI agents that need to extract structured data from websites:
-```json
-{
-  "parseURL": "https://news.ycombinator.com",
-  "selector": ".submission",
-  "method": "text",
-  "format": "json"
-}
-```
-
-### Content Monitoring
-Extract specific content for monitoring changes:
-```json
-{
-  "parseURL": "https://www.cloudflarestatus.com",
-  "selector": ".status",
-  "method": "attribute",
-  "extra": "class",
-  "format": "plaintext"
-}
-```
-
-### Link Extraction
-Gather all external links from a webpage:
-```json
-{
-  "parseURL": "https://news.ycombinator.com",
-  "selector": "a[href^='https://']",
-  "method": "attribute",
-  "extra": "href",
-  "format": "json"
-}
-```
-
-Error responses include descriptive messages:
-
-```json
-{
-  "error": "No elements found matching selector: .nonexistent"
-}
-```
-
-## Common Use Cases
-
-### Web Scraping
-Extract specific content from websites for data analysis or content aggregation.
-
-### Content Monitoring
-Monitor changes to specific elements on web pages.
-
-### Link Extraction
-Extract all links from a webpage for further processing. (Useful for crawlers to avoid processing entire webpages, or finding specific elements on each page)
-
-### Metadata Extraction
-Extract meta tags, titles, or other structured data from web pages.
-
-## Rate Limiting & Timeouts
-
-- Request timeout: 10 seconds
-- The service includes a User-Agent header for better compatibility
-- All requests are logged for monitoring
+- **Web Scraping for AI Agents**: Extract structured data from websites as JSON
+- **Content Monitoring**: Track changes to specific elements on web pages
+- **Link Extraction**: Gather all links from a webpage for crawling or processing
+- **Metadata Extraction**: Extract meta tags, titles, or Open Graph data
 
 ## Development
 
 This service is built with:
 - **Express.js** - Web framework
 - **TypeScript** - Type safety
-- **Cheerio** - Server-side HTML parsing
+- **[web-parse-lite](packages/web-parse-lite/)** - Core HTML parsing library (also on npm)
 - **Zod** - Request validation
 
-## Deployment
-
-The service runs on port 5000 and is ready for deployment on Replit or any Node.js hosting platform.
-
-To start the service:
 ```bash
 npm run dev    # Development mode
 npm run build  # Build for production
 npm start      # Production mode
 ```
 
+## Project Structure
+
+```
+packages/web-parse-lite/   # Standalone npm package (core parsing logic)
+server/                    # Express.js API service
+shared/                    # Shared schemas and types
+scripts/                   # Documentation generation
+public/                    # Generated API docs
+```
