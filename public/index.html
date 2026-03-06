@@ -425,42 +425,41 @@
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
-    &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-    &quot;selector&quot;: &quot;.titleline &gt; a&quot;,
+    &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
+    &quot;selector&quot;: &quot;h2, h2 ~ p&quot;,
+    &quot;method&quot;: &quot;plaintext&quot;
+  }&#39;
+</code></pre>
+<p><strong>Extract text content (JSON array format):</strong></p>
+<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;parseURL&quot;: &quot;https://en.wikipedia.org/wiki/Artificial_intelligence&quot;,
+    &quot;selector&quot;: &quot;h1, h2, h3&quot;,
     &quot;method&quot;: &quot;text&quot;,
     &quot;format&quot;: &quot;json&quot;
   }&#39;
 </code></pre>
-<p><strong>Extract text (plaintext format):</strong></p>
+<p><strong>Extract HTML content:</strong></p>
+<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
+    &quot;selector&quot;: &quot;.submission&quot;,
+    &quot;method&quot;: &quot;html&quot;,
+    &quot;format&quot;: &quot;json&quot;
+  }&#39;
+</code></pre>
+<p><strong>Extract attributes (e.g., image links):</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
-    &quot;selector&quot;: &quot;h2&quot;,
-    &quot;method&quot;: &quot;text&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract attributes:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;a&quot;,
-    &quot;method&quot;: &quot;attribute&quot;,
-    &quot;extra&quot;: &quot;href&quot;,
-    &quot;format&quot;: &quot;json&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract image URLs:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;img&quot;,
+    &quot;selector&quot;: &quot;main img&quot;,
     &quot;method&quot;: &quot;attribute&quot;,
     &quot;extra&quot;: &quot;src&quot;,
     &quot;format&quot;: &quot;json&quot;
-  }&#39;
+    }&#39;
 </code></pre>
 <h3>Get Request Logs</h3>
 <p><strong>GET</strong> <code>/api/logs?limit=10</code></p>

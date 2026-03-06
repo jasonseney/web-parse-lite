@@ -104,52 +104,52 @@ The `error.type` field in JSON error responses allows programmatic error handlin
 ### Examples
 
 **Extract text (JSON format):**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://news.ycombinator.com",
-    "selector": ".titleline > a",
-    "method": "text",
-    "format": "json"
-  }'
-```
 
-**Extract text (plaintext format):**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
     "parseURL": "https://blog.replit.com",
-    "selector": "h2",
-    "method": "text"
+    "selector": "h2, h2 ~ p",
+    "method": "plaintext"
   }'
 ```
 
-**Extract attributes:**
+**Extract text content (JSON array format):**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://example.com",
-    "selector": "a",
-    "method": "attribute",
-    "extra": "href",
+    "parseURL": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    "selector": "h1, h2, h3",
+    "method": "text",
     "format": "json"
   }'
 ```
 
-**Extract image URLs:**
+**Extract HTML content:**
 ```bash
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://example.com",
-    "selector": "img",
+    "parseURL": "https://news.ycombinator.com",
+    "selector": ".submission",
+    "method": "html",
+    "format": "json"
+  }'
+```
+
+**Extract attributes (e.g., image links):**
+```bash
+curl -X POST http://localhost:5000/api/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parseURL": "https://blog.replit.com",
+    "selector": "main img",
     "method": "attribute",
     "extra": "src",
     "format": "json"
-  }'
+    }'
 ```
 
 ### Get Request Logs
