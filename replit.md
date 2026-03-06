@@ -1,67 +1,83 @@
 # Overview
 
-This is an HTML Parser API service built with Express.js, TypeScript, and React. The application provides REST API endpoints for extracting content from web pages using CSS selectors, with support for text extraction, HTML content retrieval, and attribute extraction. The project includes both a backend API service and a React frontend client, along with comprehensive documentation generation and request logging capabilities.
+This project contains two things:
+1. **web-parse-lite** — A standalone npm package for extracting content from web pages using CSS selectors
+2. **HTML Parser API** — An Express.js REST API service that uses the package, with request logging and documentation
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# System Architecture
+# Project Structure
 
-## Full-Stack Architecture
-The application follows a monorepo structure with separate client and server directories, using TypeScript throughout for type safety and maintainability.
+```
+packages/web-parse-lite/     # npm package (publishable)
+  src/
+    index.ts                  # Public API exports
+    parser.ts                 # Core parsing logic (parse, parseHtml)
+    types.ts                  # Types, Zod schemas, WebParseLiteError
+  dist/                       # Built output (JS + type declarations)
+  package.json
+  tsconfig.json
+  README.md
 
-### Backend Architecture
-- **Framework**: Express.js with TypeScript for the REST API server
-- **HTML Parsing**: Cheerio library for server-side DOM manipulation and content extraction
-- **Business Logic**: Separated HTML parsing service layer for better maintainability
-- **Request Processing**: Supports three extraction methods (text, html, attribute) with CSS selector targeting
-- **Response Formats**: JSON array format for structured data and plaintext format for legacy compatibility
-- **Error Handling**: Built-in validation using Zod schemas and comprehensive error responses with categorization
-- **Logging**: Request logging system with success/failure tracking and response metrics
+server/                       # Express.js API service
+  index.ts                    # Server entry point
+  routes.ts                   # API route handlers
+  storage.ts                  # Request logging storage (Replit DB)
+  services/
+    htmlParserService.ts      # Thin wrapper around web-parse-lite package
 
-### Frontend Architecture  
-- **Framework**: React with TypeScript using Vite as the build tool and development server
-- **UI Components**: Comprehensive component library using Radix UI primitives with Tailwind CSS styling
-- **State Management**: TanStack Query for server state management and data fetching
-- **Routing**: Wouter for lightweight client-side routing
-- **Forms**: React Hook Form with Zod resolvers for form validation
+shared/
+  schema.ts                   # Zod schemas for API request validation
 
-### Database Layer
-- **ORM**: Drizzle ORM with PostgreSQL support for type-safe database operations
-- **Schema Management**: Centralized schema definitions with automatic TypeScript type generation
-- **Migrations**: Drizzle Kit for database schema migrations and management
-- **Storage Abstraction**: Dual storage implementation supporting both PostgreSQL and in-memory storage
+scripts/
+  generate-docs.js            # Generates API documentation HTML
+  docs-template.html          # Documentation template
 
-### Development Tooling
-- **Documentation**: Automated API documentation generation from README markdown
-- **Build System**: Vite for frontend bundling and esbuild for backend compilation
-- **Type Safety**: Shared TypeScript types between client and server through the shared directory
-- **Development Server**: Vite middleware integration with Express for unified development experience
+public/
+  index.html                  # Generated documentation page
+```
 
-### API Design
-The core `/api/parse` endpoint accepts POST requests with URL, CSS selector, extraction method, and optional attribute parameter. The service fetches web pages, parses HTML content, and returns extracted data based on the specified method. Request validation ensures proper parameter formatting and method-specific requirements.
+# npm Package: web-parse-lite
+
+The core parsing logic lives in `packages/web-parse-lite/`. It exports:
+- `parse(options)` — Fetches a URL and extracts content (async)
+- `parseHtml(options)` — Parses raw HTML string (sync, no network)
+- `parseOptionsSchema` — Zod validation schema
+- `WebParseLiteError` — Typed error class with categorization
+- Types: `ParseOptions`, `ParseHtmlOptions`, `ParseResult`, `ParseError`
+
+Dependencies: `cheerio`, `zod` only. No Express, no database.
+
+To build: `cd packages/web-parse-lite && npx tsc`
+To publish: `cd packages/web-parse-lite && npm publish`
+
+# API Service
+
+The Express server at `server/` uses the package for parsing and adds:
+- Request validation via Zod schemas
+- Request/response logging to Replit DB
+- Auto-generated HTML documentation
+- Health check endpoint
+
+### API Endpoints
+- `POST /api/parse` — Parse a webpage (params: parseURL, selector, method, extra, format)
+- `GET /api/logs` — Recent request history
+- `GET /api/health` — Service health check
 
 # External Dependencies
 
-## Core Runtime Dependencies
-- **@neondatabase/serverless**: Neon PostgreSQL database driver for serverless environments
-- **cheerio**: Server-side HTML parsing and DOM manipulation library
-- **drizzle-orm**: Type-safe ORM for PostgreSQL database operations
+## npm Package (web-parse-lite)
+- **cheerio**: Server-side HTML parsing and DOM manipulation
+- **zod**: Runtime type validation
 
-## Frontend UI Framework
-- **React ecosystem**: Core React library with TypeScript support
-- **@radix-ui/***: Complete set of accessible UI primitives for building the component library
-- **@tanstack/react-query**: Server state management and data fetching solution
-- **wouter**: Lightweight routing library for single-page application navigation
-
-## Styling and Design
-- **tailwindcss**: Utility-first CSS framework for responsive design
-- **class-variance-authority**: Component variant management for consistent styling
-- **clsx**: Utility for conditional className composition
-
-## Development and Build Tools
-- **vite**: Modern frontend build tool and development server
-- **esbuild**: Fast JavaScript bundler for backend compilation
-- **drizzle-kit**: Database schema management and migration tool
-- **tsx**: TypeScript execution engine for development
+## API Service (root project)
+- **express**: HTTP server framework
+- **@replit/database**: Replit key-value database for request logging
+- **cheerio**: (shared with package)
+- **zod**: (shared with package)
+- **marked**: Markdown-to-HTML for documentation generation
+- **drizzle-orm / drizzle-zod**: Schema definitions and validation
+- **tsx**: TypeScript execution for development
+- **esbuild**: Backend bundling for production

@@ -1,0 +1,39 @@
+{
+  "name": "web-parse-lite",
+  "version": "1.0.0",
+  "description": "Lightweight HTML parser for extracting content from web pages using CSS selectors",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "html",
+    "parser",
+    "css-selector",
+    "web-scraping",
+    "cheerio",
+    "extract"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
