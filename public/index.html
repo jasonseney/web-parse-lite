@@ -253,6 +253,12 @@
         <main class="content">
             <h1>HTML Parser API</h1>
 <p>A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.</p>
+<blockquote>
+<p><strong>Just need the parsing logic?</strong> The core library is available as a standalone npm package:</p>
+<pre><code class="language-bash">npm install web-parse-lite
+</code></pre>
+<p>See the <a href="packages/web-parse-lite/README.md">package documentation</a> for usage as a library in your own project.</p>
+</blockquote>
 <h2>Features</h2>
 <ul>
 <li><strong>Multiple Extraction Methods</strong>: Extract text content, HTML content with tags, or specific element attributes</li>
@@ -260,7 +266,6 @@
 <li><strong>CSS Selector Support</strong>: Use any valid CSS selector to target specific elements</li>
 <li><strong>Robust Error Handling</strong>: Comprehensive validation, timeout handling, and network error management</li>
 <li><strong>Request Logging</strong>: Built-in monitoring with detailed logs of all API requests</li>
-<li><strong>Business Logic Separation</strong>: Clean architecture with separated service layer for maintainability</li>
 </ul>
 <h2>API Endpoints</h2>
 <h3>Parse HTML Content</h3>
@@ -289,13 +294,23 @@
 <li><strong>JSON format</strong>: Array of strings, each element is a separate match</li>
 <li><strong>Plain text format</strong>: All matches joined with <code>\n\n</code> separator</li>
 </ul>
-<h4>Examples</h4>
+<h3>Get Request Logs</h3>
+<p><strong>GET</strong> <code>/api/logs?limit=10</code></p>
+<p>Retrieve recent API request logs for monitoring and debugging.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>limit</code> (number, optional): Number of logs to return (default: 10)</li>
+</ul>
+<h3>Health Check</h3>
+<p><strong>GET</strong> <code>/api/health</code></p>
+<p>Check if the service is running.</p>
+<h2>Examples</h2>
 <p><strong>Extract text content (plain text format):</strong></p>
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;h1&quot;,
+    &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
+    &quot;selector&quot;: &quot;h2, h2 ~ p&quot;,
     &quot;method&quot;: &quot;text&quot;
   }&#39;
 </code></pre>
@@ -303,8 +318,8 @@
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;h1, p&quot;,
+    &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
+    &quot;selector&quot;: &quot;.titleline &gt; a&quot;,
     &quot;method&quot;: &quot;text&quot;,
     &quot;format&quot;: &quot;json&quot;
   }&#39;
@@ -314,7 +329,7 @@
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
     &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-    &quot;selector&quot;: &quot;.storylink&quot;,
+    &quot;selector&quot;: &quot;.submission&quot;,
     &quot;method&quot;: &quot;html&quot;,
     &quot;format&quot;: &quot;json&quot;
   }&#39;
@@ -323,143 +338,11 @@
 <pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
   -H &quot;Content-Type: application/json&quot; \
   -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;a&quot;,
+    &quot;parseURL&quot;: &quot;https://blog.replit.com&quot;,
+    &quot;selector&quot;: &quot;main a&quot;,
     &quot;method&quot;: &quot;attribute&quot;,
     &quot;extra&quot;: &quot;href&quot;,
     &quot;format&quot;: &quot;json&quot;
-  }&#39;
-</code></pre>
-<h3>Get Request Logs</h3>
-<p><strong>GET</strong> <code>/api/logs?limit=10</code></p>
-<p>Retrieve recent API request logs for monitoring and debugging.</p>
-<h4>Query Parameters</h4>
-<ul>
-<li><code>limit</code> (number, optional): Number of logs to return (default: 10)</li>
-</ul>
-<h4>Response</h4>
-<pre><code class="language-json">[
-  {
-    &quot;id&quot;: 1,
-    &quot;parseUrl&quot;: &quot;https://example.com&quot;,
-    &quot;selector&quot;: &quot;h1&quot;,
-    &quot;method&quot;: &quot;text&quot;,
-    &quot;success&quot;: true,
-    &quot;responseLength&quot;: 25,
-    &quot;timestamp&quot;: &quot;2024-01-01T12:00:00Z&quot;
-  }
-]
-</code></pre>
-<h3>Health Check</h3>
-<p><strong>GET</strong> <code>/api/health</code></p>
-<p>Check if the service is running.</p>
-<h4>Response</h4>
-<pre><code class="language-json">{
-  &quot;status&quot;: &quot;healthy&quot;,
-  &quot;timestamp&quot;: &quot;2024-01-01T12:00:00Z&quot;,
-  &quot;service&quot;: &quot;HTML Parser API&quot;
-}
-</code></pre>
-<h2>Error Handling</h2>
-<p>The API provides comprehensive error handling with appropriate HTTP status codes:</p>
-<ul>
-<li><strong>200 Success</strong>: Request processed successfully</li>
-<li><strong>400 Bad Request</strong>: <ul>
-<li>Validation errors (invalid URL, missing required fields)</li>
-<li>Parsing errors (no elements found matching selector)</li>
-<li>Network errors (timeout, DNS resolution failed)</li>
-<li>Method-specific errors (missing <code>extra</code> parameter for attribute extraction)</li>
-</ul>
-</li>
-<li><strong>500 Internal Server Error</strong>: Unexpected server-side issues</li>
-</ul>
-<p>Error responses include descriptive messages to help diagnose issues:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: &quot;No elements found matching selector: .nonexistent-class&quot;
-}
-</code></pre>
-<h2>Common Use Cases</h2>
-<h3>Web Scraping for AI Agents</h3>
-<p>Perfect for AI agents that need to extract structured data from websites:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-  &quot;selector&quot;: &quot;.storylink&quot;,
-  &quot;method&quot;: &quot;text&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<h3>Content Monitoring</h3>
-<p>Extract specific content for monitoring changes:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://example.com/status&quot;,
-  &quot;selector&quot;: &quot;.status-indicator&quot;,
-  &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;class&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<h3>Link Extraction</h3>
-<p>Gather all links from a webpage:</p>
-<pre><code class="language-json">{
-  &quot;parseURL&quot;: &quot;https://example.com&quot;,
-  &quot;selector&quot;: &quot;a[href^=&#39;https://&#39;]&quot;,
-  &quot;method&quot;: &quot;attribute&quot;,
-  &quot;extra&quot;: &quot;href&quot;,
-  &quot;format&quot;: &quot;json&quot;
-}
-</code></pre>
-<p>Error responses include descriptive messages:</p>
-<pre><code class="language-json">{
-  &quot;error&quot;: &quot;No elements found matching selector: .nonexistent&quot;
-}
-</code></pre>
-<h2>Common Use Cases</h2>
-<h3>Web Scraping</h3>
-<p>Extract specific content from websites for data analysis or content aggregation.</p>
-<h3>Content Monitoring</h3>
-<p>Monitor changes to specific elements on web pages.</p>
-<h3>Link Extraction</h3>
-<p>Extract all links from a webpage for further processing.</p>
-<h3>Metadata Extraction</h3>
-<p>Extract meta tags, titles, or other structured data from web pages.</p>
-<h2>Rate Limiting &amp; Timeouts</h2>
-<ul>
-<li>Request timeout: 10 seconds</li>
-<li>The service includes a User-Agent header for better compatibility</li>
-<li>All requests are logged for monitoring</li>
-</ul>
-<h2>Development</h2>
-<p>This service is built with:</p>
-<ul>
-<li><strong>Express.js</strong> - Web framework</li>
-<li><strong>TypeScript</strong> - Type safety</li>
-<li><strong>Cheerio</strong> - Server-side HTML parsing</li>
-<li><strong>Zod</strong> - Request validation</li>
-</ul>
-<h2>Deployment</h2>
-<p>The service runs on port 5000 and is ready for deployment on Replit or any Node.js hosting platform.</p>
-<p>To start the service:</p>
-<pre><code class="language-bash">npm run dev    # Development mode
-npm run build  # Build for production
-npm start      # Production mode
-</code></pre>
-<h2>Examples with Different Websites</h2>
-<p><strong>Extract article titles from a news site:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://news.ycombinator.com&quot;,
-    &quot;selector&quot;: &quot;.titleline &gt; a&quot;,
-    &quot;method&quot;: &quot;text&quot;
-  }&#39;
-</code></pre>
-<p><strong>Extract product prices:</strong></p>
-<pre><code class="language-bash">curl -X POST http://localhost:5000/api/parse \
-  -H &quot;Content-Type: application/json&quot; \
-  -d &#39;{
-    &quot;parseURL&quot;: &quot;https://example-store.com/product&quot;,
-    &quot;selector&quot;: &quot;.price&quot;,
-    &quot;method&quot;: &quot;text&quot;
   }&#39;
 </code></pre>
 <p><strong>Extract all image URLs:</strong></p>
@@ -471,6 +354,45 @@ npm start      # Production mode
     &quot;method&quot;: &quot;attribute&quot;,
     &quot;extra&quot;: &quot;src&quot;
   }&#39;
+</code></pre>
+<h2>Error Handling</h2>
+<p>The API provides descriptive error responses with appropriate HTTP status codes:</p>
+<ul>
+<li><strong>200 Success</strong>: Request processed successfully</li>
+<li><strong>400 Bad Request</strong>: Validation errors, parsing errors (no matching elements), network errors, or timeout</li>
+<li><strong>500 Internal Server Error</strong>: Unexpected server-side issues</li>
+</ul>
+<h2>Common Use Cases</h2>
+<ul>
+<li><strong>Web Scraping for AI Agents</strong>: Extract structured data from websites as JSON arrays</li>
+<li><strong>Content Monitoring</strong>: Track changes to specific elements on web pages</li>
+<li><strong>Link Extraction</strong>: Gather all links from a webpage for processing</li>
+<li><strong>Metadata Extraction</strong>: Extract meta tags, titles, or other structured data</li>
+</ul>
+<h2>Rate Limiting &amp; Timeouts</h2>
+<ul>
+<li>Request timeout: 10 seconds</li>
+<li>The service includes a User-Agent header for better compatibility</li>
+<li>All requests are logged for monitoring</li>
+</ul>
+<h2>Development</h2>
+<p>This service is built with:</p>
+<ul>
+<li><strong>Express.js</strong> - Web framework</li>
+<li><strong>TypeScript</strong> - Type safety</li>
+<li><strong><a href="packages/web-parse-lite/">web-parse-lite</a></strong> - Core HTML parsing library (also available on npm)</li>
+<li><strong>Zod</strong> - Request validation</li>
+</ul>
+<pre><code class="language-bash">npm run dev    # Development mode
+npm run build  # Build for production
+npm start      # Production mode
+</code></pre>
+<h2>Project Structure</h2>
+<pre><code>packages/web-parse-lite/   # Standalone npm package (core parsing logic)
+server/                    # Express.js API service
+shared/                    # Shared schemas and types
+scripts/                   # Documentation generation
+public/                    # Generated API docs
 </code></pre>
 
         </main>

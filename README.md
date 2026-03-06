@@ -3,6 +3,12 @@
 
 A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.
 
+> **Just need the parsing logic?** The core library is available as a standalone npm package:
+> ```bash
+> npm install web-parse-lite
+> ```
+> See the [package documentation](packages/web-parse-lite/README.md) for usage as a library in your own project.
+
 ## Features
 
 - **Multiple Extraction Methods**: Extract text content, HTML content with tags, or specific element attributes
@@ -10,7 +16,6 @@ A REST API service that extracts content from web pages using CSS selectors. Bui
 - **CSS Selector Support**: Use any valid CSS selector to target specific elements
 - **Robust Error Handling**: Comprehensive validation, timeout handling, and network error management
 - **Request Logging**: Built-in monitoring with detailed logs of all API requests
-- **Business Logic Separation**: Clean architecture with separated service layer for maintainability
 
 ## API Endpoints
 
@@ -45,7 +50,22 @@ Returns content in the specified format:
 - **JSON format**: Array of strings, each element is a separate match
 - **Plain text format**: All matches joined with `\n\n` separator
 
-#### Examples
+### Get Request Logs
+
+**GET** `/api/logs?limit=10`
+
+Retrieve recent API request logs for monitoring and debugging.
+
+**Query Parameters:**
+- `limit` (number, optional): Number of logs to return (default: 10)
+
+### Health Check
+
+**GET** `/api/health`
+
+Check if the service is running.
+
+## Examples
 
 **Extract text content (plain text format):**
 ```bash
@@ -63,8 +83,8 @@ curl -X POST http://localhost:5000/api/parse \
 curl -X POST http://localhost:5000/api/parse \
   -H "Content-Type: application/json" \
   -d '{
-    "parseURL": "https://en.wikipedia.org/wiki/Artificial_intelligence",
-    "selector": "h1, h2, h3",
+    "parseURL": "https://news.ycombinator.com",
+    "selector": ".titleline > a",
     "method": "text",
     "format": "json"
   }'
@@ -95,122 +115,32 @@ curl -X POST http://localhost:5000/api/parse \
   }'
 ```
 
-### Get Request Logs
-
-**GET** `/api/logs?limit=10`
-
-Retrieve recent API request logs for monitoring and debugging.
-
-#### Query Parameters
-- `limit` (number, optional): Number of logs to return (default: 10)
-
-#### Response
-```json
-[
-  {
-    "id": 1,
-    "parseUrl": "https://example.com",
-    "selector": "h1",
-    "method": "text",
-    "success": true,
-    "responseLength": 25,
-    "timestamp": "2024-01-01T12:00:00Z"
-  }
-]
-```
-
-### Health Check
-
-**GET** `/api/health`
-
-Check if the service is running.
-
-#### Response
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-01T12:00:00Z",
-  "service": "HTML Parser API"
-}
+**Extract all image URLs:**
+```bash
+curl -X POST http://localhost:5000/api/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parseURL": "https://example.com",
+    "selector": "img",
+    "method": "attribute",
+    "extra": "src"
+  }'
 ```
 
 ## Error Handling
 
-The API provides comprehensive error handling with appropriate HTTP status codes:
+The API provides descriptive error responses with appropriate HTTP status codes:
 
 - **200 Success**: Request processed successfully
-- **400 Bad Request**: 
-  - Validation errors (invalid URL, missing required fields)
-  - Parsing errors (no elements found matching selector)
-  - Network errors (timeout, DNS resolution failed)
-  - Method-specific errors (missing `extra` parameter for attribute extraction)
+- **400 Bad Request**: Validation errors, parsing errors (no matching elements), network errors, or timeout
 - **500 Internal Server Error**: Unexpected server-side issues
 
-Error responses include descriptive messages to help diagnose issues:
-```json
-{
-  "error": "No elements found matching selector: .nonexistent-class"
-}
-```
-
 ## Common Use Cases
 
-### Web Scraping for AI Agents
-Perfect for AI agents that need to extract structured data from websites:
-```json
-{
-  "parseURL": "https://news.ycombinator.com",
-  "selector": ".storylink",
-  "method": "text",
-  "format": "json"
-}
-```
-
-### Content Monitoring
-Extract specific content for monitoring changes:
-```json
-{
-  "parseURL": "https://example.com/status",
-  "selector": ".status-indicator",
-  "method": "attribute",
-  "extra": "class",
-  "format": "json"
-}
-```
-
-### Link Extraction
-Gather all links from a webpage:
-```json
-{
-  "parseURL": "https://example.com",
-  "selector": "a[href^='https://']",
-  "method": "attribute",
-  "extra": "href",
-  "format": "json"
-}
-```
-
-Error responses include descriptive messages:
-
-```json
-{
-  "error": "No elements found matching selector: .nonexistent"
-}
-```
-
-## Common Use Cases
-
-### Web Scraping
-Extract specific content from websites for data analysis or content aggregation.
-
-### Content Monitoring
-Monitor changes to specific elements on web pages.
-
-### Link Extraction
-Extract all links from a webpage for further processing.
-
-### Metadata Extraction
-Extract meta tags, titles, or other structured data from web pages.
+- **Web Scraping for AI Agents**: Extract structured data from websites as JSON arrays
+- **Content Monitoring**: Track changes to specific elements on web pages
+- **Link Extraction**: Gather all links from a webpage for processing
+- **Metadata Extraction**: Extract meta tags, titles, or other structured data
 
 ## Rate Limiting & Timeouts
 
@@ -223,52 +153,21 @@ Extract meta tags, titles, or other structured data from web pages.
 This service is built with:
 - **Express.js** - Web framework
 - **TypeScript** - Type safety
-- **Cheerio** - Server-side HTML parsing
+- **[web-parse-lite](packages/web-parse-lite/)** - Core HTML parsing library (also available on npm)
 - **Zod** - Request validation
 
-## Deployment
-
-The service runs on port 5000 and is ready for deployment on Replit or any Node.js hosting platform.
-
-To start the service:
 ```bash
 npm run dev    # Development mode
 npm run build  # Build for production
 npm start      # Production mode
 ```
 
-## Examples with Different Websites
+## Project Structure
 
-**Extract article titles from a news site:**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://news.ycombinator.com",
-    "selector": ".titleline > a",
-    "method": "text"
-  }'
 ```
-
-**Extract product prices:**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://example-store.com/product",
-    "selector": ".price",
-    "method": "text"
-  }'
-```
-
-**Extract all image URLs:**
-```bash
-curl -X POST http://localhost:5000/api/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parseURL": "https://example.com",
-    "selector": "img",
-    "method": "attribute",
-    "extra": "src"
-  }'
+packages/web-parse-lite/   # Standalone npm package (core parsing logic)
+server/                    # Express.js API service
+shared/                    # Shared schemas and types
+scripts/                   # Documentation generation
+public/                    # Generated API docs
 ```
