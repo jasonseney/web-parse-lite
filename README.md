@@ -3,7 +3,7 @@
 
 A REST API service that extracts content from web pages using CSS selectors. Built with Express.js, TypeScript, and Cheerio for reliable HTML parsing.
 
-> [!IMPORTANT]
+> [!NOTE]
 > **Just need the parsing logic?** The core library is available as a standalone npm package:
 > ```bash
 > npm install @js0n-dev/web-parse-lite
