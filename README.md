@@ -156,7 +156,9 @@ curl -X POST http://localhost:5000/api/parse \
 
 **GET** `/api/logs?limit=10`
 
-Retrieve recent API request logs for monitoring and debugging.
+Retrieve recent API request logs for monitoring and debugging. This endpoint is restricted to local access only (localhost) and returns 403 for external requests.
+
+Logs are automatically pruned: entries older than 30 days are deleted, and total entries are capped at 1,000.
 
 ### Health Check
 

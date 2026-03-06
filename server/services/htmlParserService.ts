@@ -38,19 +38,23 @@ export class HtmlParserService {
 
   public static categorizeError(error: any): ParseError {
     if (error instanceof WebParseLiteError) {
+      if (error.type === "unknown" && error.message?.includes("fetch failed")) {
+        return { message: "Failed to fetch the target URL", type: "network" };
+      }
       return { message: error.message, type: error.type };
     }
 
+    const msg = error.message || "";
     if (error.name === "AbortError") {
       return { message: "Request timeout (10 seconds exceeded)", type: "timeout" };
     }
-    if (error.code === "ENOTFOUND") {
-      return { message: "Invalid URL or network error", type: "network" };
+    if (error.code === "ENOTFOUND" || msg.includes("fetch failed")) {
+      return { message: "Failed to fetch the target URL", type: "network" };
     }
-    if (error.message?.includes("No elements found")) {
-      return { message: error.message, type: "parsing" };
+    if (msg.includes("No elements found")) {
+      return { message: msg, type: "parsing" };
     }
-    return { message: error.message || "Unknown error occurred", type: "unknown" };
+    return { message: msg || "Unknown error occurred", type: "unknown" };
   }
 }
 

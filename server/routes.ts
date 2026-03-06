@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { parseRequestSchema, type ParseRequest } from "@shared/schema";
@@ -13,6 +13,11 @@ function errorStatusCode(type: string): number {
     case "timeout": return 504;
     default: return 500;
   }
+}
+
+function isLocalRequest(req: Request): boolean {
+  const ip = req.ip || req.socket.remoteAddress || "";
+  return ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -105,6 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/logs", async (req, res) => {
+    if (!isLocalRequest(req)) {
+      return res.status(403).json({ error: "Logs are only accessible locally" });
+    }
+
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const logs = await storage.getRecentRequests(limit);

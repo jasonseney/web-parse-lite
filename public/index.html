@@ -463,7 +463,8 @@
 </code></pre>
 <h3>Get Request Logs</h3>
 <p><strong>GET</strong> <code>/api/logs?limit=10</code></p>
-<p>Retrieve recent API request logs for monitoring and debugging.</p>
+<p>Retrieve recent API request logs for monitoring and debugging. This endpoint is restricted to local access only (localhost) and returns 403 for external requests.</p>
+<p>Logs are automatically pruned: entries older than 30 days are deleted, and total entries are capped at 1,000.</p>
 <h3>Health Check</h3>
 <p><strong>GET</strong> <code>/api/health</code></p>
 <p>Returns <code>{ &quot;status&quot;: &quot;healthy&quot;, &quot;timestamp&quot;: &quot;...&quot;, &quot;service&quot;: &quot;HTML Parser API&quot; }</code>.</p>
