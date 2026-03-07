@@ -16,7 +16,7 @@ const KNOWN_UTILITY_WORDS = new Set([
   "sticky", "static", "truncate", "uppercase", "lowercase", "capitalize",
   "italic", "underline", "bold", "grow", "shrink", "group", "peer", "dark",
   "light", "prose", "clearfix", "active", "show", "open", "closed",
-  "selected", "checked", "disabled", "loading", "error"
+  "selected", "checked", "disabled", "loading", "error", "whitespace"
 ]);
 
 const SEMANTIC_TAG_WEIGHT: Record<string, number> = {
@@ -33,6 +33,7 @@ function isSemanticClass(c: string): boolean {
   if (!c) return false;
   if (c.includes(":")) return false;
   if (c.includes("[")) return false;
+  if (c.startsWith("!")) return false;
   if (/^\d/.test(c)) return false;
   if (/-\d+$/.test(c)) return false;
   if (UTILITY_CLASS_RE.test(c)) return false;
