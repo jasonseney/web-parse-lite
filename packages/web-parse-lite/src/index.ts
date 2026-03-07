@@ -1,4 +1,5 @@
-export { parse, parseHtml, discover, discoverHtml } from "./parser.js";
+export { parse, parseHtml } from "./parser.js";
+export { discover, discoverHtml } from "./discover.js";
 
 export {
   parseOptionsSchema,

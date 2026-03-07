@@ -14,7 +14,9 @@ Preferred communication style: Simple, everyday language.
 packages/web-parse-lite/     # npm package (publishable as @js0n-dev/web-parse-lite)
   src/
     index.ts                  # Public API exports
-    parser.ts                 # Core logic (parse, parseHtml, discover, discoverHtml)
+    parser.ts                 # Parse logic (parse, parseHtml)
+    discover.ts               # Discover logic (discover, discoverHtml)
+    fetcher.ts                # Shared URL fetching (fetchPage)
     types.ts                  # Types, Zod schemas, WebParseLiteError
   dist/                       # Built output (JS + type declarations)
   test.js                     # Package test suite (40 tests)
