@@ -92,8 +92,33 @@ async function fetchPage(
   }
 }
 
+// Discover selectors
 const IGNORED_TAGS = new Set(["script", "style", "head", "html", "body", "meta", "link", "noscript", "svg", "path"]);
-const UTILITY_CLASS_RE = /^(js-|is-|has-|active|hidden|show|d-|col-|row|flex|grid|mt-|mb-|ml-|mr-|mx-|my-|px-|py-|pt-|pb-|pl-|pr-|w-|h-|min-|max-|text-|font-|bg-|border-|rounded|shadow|overflow|relative|absolute|fixed|sticky|inline|block|float|clear|sr-only|container|wrapper)/;
+
+// Utility class patterns
+const UTILITY_CLASS_RE = /^(js-|is-|has-|d-|col-|flex|grid|block|inline|mt-|mb-|ml-|mr-|mx-|my-|px-|py-|pt-|pb-|pl-|pr-|w-|h-|min-|max-|text-|font-|bg-|border-|rounded|shadow|overflow|relative|absolute|fixed|sticky|sr-only|container|wrapper|gap-|space-|p-|m-|duration-|delay-|ease-|transition|animate-|leading-|tracking-|translate-|rotate-|scale-|skew-|origin-|object-|aspect-|line-clamp-|truncate|shrink|grow|basis-|items-|justify-|content-|self-|place-|cursor-|pointer-|select-|z-|order-|opacity-|mix-|blur-|fill-|stroke-|top-|right-|bottom-|left-|inset-)/;
+
+// Known utility words that aren't patterns
+const KNOWN_UTILITY_WORDS = new Set([
+  "container", "wrapper", "inner", "outer", "row", "col", "flex", "grid",
+  "block", "inline", "hidden", "visible", "relative", "absolute", "fixed",
+  "sticky", "static", "truncate", "uppercase", "lowercase", "capitalize",
+  "italic", "underline", "bold", "grow", "shrink", "group", "peer", "dark",
+  "light", "prose", "clearfix", "active", "show", "open", "closed",
+  "selected", "checked", "disabled", "loading", "error"
+]);
+
+// New optimized semantic class detection
+function isSemanticClass(c: string): boolean {
+  if (!c) return false;
+  if (c.includes(":")) return false;   // sm:, hover:, dark:, 1000:, etc.
+  if (c.includes("[")) return false;   // arbitrary values: p-[4px], aspect-[2/1]
+  if (/^\d/.test(c)) return false;     // starts with digit
+  if (/-\d+$/.test(c)) return false;   // ends in -number: gap-8, mt-4, p-3
+  if (UTILITY_CLASS_RE.test(c)) return false;
+  if (KNOWN_UTILITY_WORDS.has(c)) return false;
+  return true;
+}
 
 export async function discover(options: DiscoverOptions): Promise<DiscoverResult> {
   const { url, timeout = DEFAULT_TIMEOUT, userAgent = DEFAULT_USER_AGENT } = options;
@@ -106,6 +131,7 @@ export async function discover(options: DiscoverOptions): Promise<DiscoverResult
   return discoverHtml(html);
 }
 
+// Main discovery function for getting selectors from HTML
 export function discoverHtml(html: string): DiscoverResult {
   const $ = cheerio.load(html);
   const counts: Map<string, number> = new Map();
@@ -119,7 +145,7 @@ export function discoverHtml(html: string): DiscoverResult {
     const id = node.attr("id");
     const classes = (node.attr("class") || "")
       .split(/\s+/)
-      .filter((c) => c && !UTILITY_CLASS_RE.test(c))
+      .filter(isSemanticClass)  // <-- replaces the old inline filter
       .slice(0, 2);
 
     let selector = tag;
