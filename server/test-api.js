@@ -237,6 +237,38 @@ await networkTest("no matching selector returns 404 with parsing error", async (
   assert(res.data.error.type === "parsing", `type should be parsing, got ${res.data.error.type}`);
 });
 
+// ─── Discover endpoint ───
+
+console.log("\n── Discover endpoint: validation ──");
+
+await test("discover with invalid URL returns 400", async () => {
+  const res = await post("/api/discover", { parseURL: "not-a-url" });
+  assert(res.status === 400, `status should be 400, got ${res.status}`);
+  assert(res.isJson, "should be JSON");
+  assert(res.data.success === false, "success should be false");
+  assert(res.data.error.type === "validation", `type should be validation, got ${res.data.error.type}`);
+});
+
+await test("discover with missing URL returns 400", async () => {
+  const res = await post("/api/discover", {});
+  assert(res.status === 400, `status should be 400, got ${res.status}`);
+  assert(res.data.success === false, "success should be false");
+});
+
+console.log("\n── Discover endpoint: network tests ──");
+
+await networkTest("discover returns selectors and samples for example.com", async () => {
+  const res = await post("/api/discover", { parseURL: "https://example.com" });
+  if (res.status !== 200) throw new Error(`${res.status}`);
+  assert(res.data.success === true, "success should be true");
+  assert(Array.isArray(res.data.data.selectors), "data.selectors should be array");
+  assert(typeof res.data.data.sample === "object", "data.sample should be object");
+  assert(res.data.data.selectors.length > 0, "should find selectors");
+  assert(res.data.meta.url === "https://example.com", "meta.url should match");
+  assert(typeof res.data.meta.selectorCount === "number", "meta.selectorCount should be number");
+  assert(res.data.meta.selectorCount === res.data.data.selectors.length, "selectorCount should match");
+});
+
 // ─── Other endpoints ───
 
 console.log("\n── Health endpoint ──");

@@ -86,6 +86,52 @@ Parses a raw HTML string (synchronous, no network request).
 - **`json`** (default) — Returns `data` as `string[]`
 - **`plaintext`** — Returns `data` as a single string with results joined by `\n\n`
 
+## Discover Page Structure
+
+### `discover(options): Promise<DiscoverResult>`
+
+Fetches a URL and analyzes its HTML structure, returning the most common CSS selectors with sample text. Useful for exploring a page before writing selectors.
+
+```typescript
+import { discover } from "web-parse-lite";
+
+const result = await discover({ url: "https://example.com" });
+console.log(result.selectors); // ["div", "a", "p", "h1", ...]
+console.log(result.sample);    // { "h1": "Example Domain", "a": "More information...", ... }
+```
+
+| Option      | Type     | Required | Default  | Description              |
+| ----------- | -------- | -------- | -------- | ------------------------ |
+| `url`       | `string` | Yes      |          | URL to fetch and analyze |
+| `timeout`   | `number` | No       | `10000`  | Request timeout in ms    |
+| `userAgent` | `string` | No       | Built-in | Custom User-Agent header |
+
+### `discoverHtml(html): DiscoverResult`
+
+Analyzes a raw HTML string (synchronous, no network request).
+
+```typescript
+import { discoverHtml } from "web-parse-lite";
+
+const result = discoverHtml("<html><body><h1>Title</h1><p>Text</p></body></html>");
+```
+
+### `DiscoverResult`
+
+```typescript
+{
+  selectors: string[];                // Top 30 selectors, ranked by frequency
+  sample: Record<string, string>;     // Selector → first text snippet (max 80 chars)
+}
+```
+
+The discover functions automatically:
+- Filter out non-content tags (script, style, meta, etc.)
+- Filter out utility CSS classes (flex, grid, mt-, px-, etc.)
+- Prioritize elements with IDs and meaningful class names
+- Cap class names at 2 per selector for usability
+- Return up to 30 selectors sorted by frequency
+
 ## Error Handling
 
 All errors throw `WebParseLiteError` with a `type` property for programmatic handling:

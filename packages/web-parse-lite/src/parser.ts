@@ -6,6 +6,8 @@ import {
   type ParseOptions,
   type ParseHtmlOptions,
   type ParseResult,
+  type DiscoverOptions,
+  type DiscoverResult,
 } from "./types.js";
 
 const DEFAULT_TIMEOUT = 10000;
@@ -88,6 +90,61 @@ async function fetchPage(
       "unknown"
     );
   }
+}
+
+const IGNORED_TAGS = new Set(["script", "style", "head", "html", "body", "meta", "link", "noscript", "svg", "path"]);
+const UTILITY_CLASS_RE = /^(js-|is-|has-|active|hidden|show|d-|col-|row|flex|grid|mt-|mb-|ml-|mr-|mx-|my-|px-|py-|pt-|pb-|pl-|pr-|w-|h-|min-|max-|text-|font-|bg-|border-|rounded|shadow|overflow|relative|absolute|fixed|sticky|inline|block|float|clear|sr-only|container|wrapper)/;
+
+export async function discover(options: DiscoverOptions): Promise<DiscoverResult> {
+  const { url, timeout = DEFAULT_TIMEOUT, userAgent = DEFAULT_USER_AGENT } = options;
+
+  if (!url || !url.startsWith("http")) {
+    throw new WebParseLiteError("Invalid URL format", "validation");
+  }
+
+  const html = await fetchPage(url, timeout, userAgent);
+  return discoverHtml(html);
+}
+
+export function discoverHtml(html: string): DiscoverResult {
+  const $ = cheerio.load(html);
+  const counts: Map<string, number> = new Map();
+  const samples: Map<string, string> = new Map();
+
+  $("*").each((_, el) => {
+    const node = $(el);
+    const tag = el.type === "tag" ? (el as any).name : null;
+    if (!tag || IGNORED_TAGS.has(tag)) return;
+
+    const id = node.attr("id");
+    const classes = (node.attr("class") || "")
+      .split(/\s+/)
+      .filter((c) => c && !UTILITY_CLASS_RE.test(c))
+      .slice(0, 2);
+
+    let selector = tag;
+    if (id) selector += `#${id}`;
+    else if (classes.length) selector += `.${classes.join(".")}`;
+
+    counts.set(selector, (counts.get(selector) || 0) + 1);
+
+    if (!samples.has(selector)) {
+      const text = node.clone().children().remove().end().text().trim().slice(0, 80);
+      if (text) samples.set(selector, text);
+    }
+  });
+
+  const selectors = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 30)
+    .map(([sel]) => sel);
+
+  const sample: Record<string, string> = {};
+  for (const sel of selectors) {
+    if (samples.has(sel)) sample[sel] = samples.get(sel)!;
+  }
+
+  return { selectors, sample };
 }
 
 function extractFromHtml(

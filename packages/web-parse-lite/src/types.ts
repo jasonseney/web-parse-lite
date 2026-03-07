@@ -47,6 +47,17 @@ export interface ParseError {
   type: "validation" | "network" | "parsing" | "timeout" | "unknown";
 }
 
+export interface DiscoverOptions {
+  url: string;
+  timeout?: number;
+  userAgent?: string;
+}
+
+export interface DiscoverResult {
+  selectors: string[];
+  sample: Record<string, string>;
+}
+
 export class WebParseLiteError extends Error {
   public readonly type: ParseError["type"];
 

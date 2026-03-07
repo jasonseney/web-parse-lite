@@ -1,4 +1,4 @@
-import { parseHtml, parse, parseOptionsSchema, WebParseLiteError } from "./dist/index.js";
+import { parseHtml, parse, discoverHtml, parseOptionsSchema, WebParseLiteError } from "./dist/index.js";
 
 let passed = 0;
 let failed = 0;
@@ -299,6 +299,113 @@ test("works with all error types", () => {
     const err = new WebParseLiteError("msg", type);
     assert(err.type === type, `type should be ${type}`);
   }
+});
+
+console.log("\n── discoverHtml ──");
+
+const discoverSampleHtml = `
+<html>
+<head><title>Test</title><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head>
+<body>
+  <script>var x = 1;</script>
+  <style>.foo { color: red; }</style>
+  <header id="main-header">
+    <nav class="primary-nav">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/about" class="nav-link">About</a>
+      <a href="/contact" class="nav-link">Contact</a>
+    </nav>
+  </header>
+  <main>
+    <article class="post">
+      <h2 class="post-title">First Post</h2>
+      <p class="post-body">This is the first post content that is long enough to test truncation behavior of the sample text.</p>
+    </article>
+    <article class="post">
+      <h2 class="post-title">Second Post</h2>
+      <p class="post-body">Second post content here.</p>
+    </article>
+    <article class="post">
+      <h2 class="post-title">Third Post</h2>
+      <p class="post-body">Third post content.</p>
+    </article>
+  </main>
+  <div class="mt-4 px-2 flex">Utility class div</div>
+  <footer>
+    <p>Footer text</p>
+  </footer>
+</body>
+</html>
+`;
+
+test("returns selectors array and sample object", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  assert(Array.isArray(result.selectors), "selectors should be array");
+  assert(typeof result.sample === "object", "sample should be object");
+  assert(result.selectors.length > 0, "should find selectors");
+});
+
+test("filters out script, style, head, meta, link tags", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  const forbidden = ["script", "style", "head", "meta", "link", "html", "body"];
+  for (const sel of result.selectors) {
+    const tag = sel.split(/[#.]/)[0];
+    assert(!forbidden.includes(tag), `should not include ${tag}`);
+  }
+});
+
+test("filters out utility CSS classes", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  assert(!result.selectors.includes("div.mt-4"), "should filter mt-4");
+  assert(!result.selectors.includes("div.px-2"), "should filter px-2");
+  assert(!result.selectors.includes("div.flex"), "should filter flex");
+});
+
+test("includes id-based selectors", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  assert(result.selectors.includes("header#main-header"), "should include header#main-header");
+});
+
+test("includes class-based selectors", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  assert(result.selectors.includes("a.nav-link"), "should include a.nav-link");
+  assert(result.selectors.includes("article.post"), "should include article.post");
+});
+
+test("selectors are sorted by frequency (most common first)", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  const navLinkIdx = result.selectors.indexOf("a.nav-link");
+  const headerIdx = result.selectors.indexOf("header#main-header");
+  assert(navLinkIdx < headerIdx, "a.nav-link (3 occurrences) should rank before header#main-header (1 occurrence)");
+});
+
+test("sample text is truncated to 80 chars", () => {
+  const result = discoverHtml(discoverSampleHtml);
+  for (const [sel, text] of Object.entries(result.sample)) {
+    assert(text.length <= 80, `sample for ${sel} should be <= 80 chars, got ${text.length}`);
+  }
+});
+
+test("caps at 30 selectors max", () => {
+  let bigHtml = "<html><body>";
+  for (let i = 0; i < 50; i++) {
+    bigHtml += `<div class="unique-${i}">Content ${i}</div>`;
+  }
+  bigHtml += "</body></html>";
+  const result = discoverHtml(bigHtml);
+  assert(result.selectors.length <= 30, `should cap at 30, got ${result.selectors.length}`);
+});
+
+test("handles empty HTML without crashing", () => {
+  const result = discoverHtml("");
+  assert(Array.isArray(result.selectors), "should return empty selectors array");
+  assert(result.selectors.length === 0, "should have no selectors");
+});
+
+test("handles minimal HTML without crashing", () => {
+  const result = discoverHtml("<html><body></body></html>");
+  assert(Array.isArray(result.selectors), "should return empty selectors array");
+  assert(result.selectors.length === 0, "should have no selectors");
 });
 
 // Summary

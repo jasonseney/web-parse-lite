@@ -1,4 +1,4 @@
-import { parse, WebParseLiteError, type ParseResult as PackageParseResult } from "../../packages/web-parse-lite/dist/index.js";
+import { parse, discover, WebParseLiteError, type ParseResult as PackageParseResult, type DiscoverResult } from "../../packages/web-parse-lite/dist/index.js";
 import type { ParseRequest } from "@shared/schema";
 
 export interface ParseResult {
@@ -34,6 +34,10 @@ export class HtmlParserService {
       responseLength,
       format,
     };
+  }
+
+  async discoverWebpage(url: string): Promise<DiscoverResult> {
+    return discover({ url });
   }
 
   public static categorizeError(error: any): ParseError {

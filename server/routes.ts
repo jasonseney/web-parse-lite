@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { parseRequestSchema, type ParseRequest } from "@shared/schema";
+import { parseRequestSchema, discoverRequestSchema, type ParseRequest } from "@shared/schema";
 import { z } from "zod";
 import { htmlParserService, HtmlParserService } from "./services/htmlParserService";
 
@@ -102,6 +102,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       console.error("Parse API error:", error);
+      res.status(500).json({
+        success: false,
+        error: { message: "Internal server error", type: "unknown" }
+      });
+    }
+  });
+
+  app.post("/api/discover", async (req, res) => {
+    try {
+      const validationResult = discoverRequestSchema.safeParse(req.body);
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors
+          .map(err => `${err.path.join('.')}: ${err.message}`)
+          .join(", ");
+        return res.status(400).json({
+          success: false,
+          error: { message: errorMessage, type: "validation" }
+        });
+      }
+
+      const { parseURL } = validationResult.data;
+
+      try {
+        const result = await htmlParserService.discoverWebpage(parseURL);
+        return res.json({
+          success: true,
+          data: result,
+          meta: { url: parseURL, selectorCount: result.selectors.length }
+        });
+      } catch (discoverError: any) {
+        const error = HtmlParserService.categorizeError(discoverError);
+        const status = errorStatusCode(error.type);
+        return res.status(status).json({
+          success: false,
+          error: { message: error.message, type: error.type }
+        });
+      }
+    } catch (error: any) {
+      console.error("Discover API error:", error);
       res.status(500).json({
         success: false,
         error: { message: "Internal server error", type: "unknown" }

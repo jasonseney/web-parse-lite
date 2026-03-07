@@ -39,6 +39,11 @@ export const parseRequestSchema = z.object({
   path: ["extra"]
 });
 
+export const discoverRequestSchema = z.object({
+  parseURL: z.string().url("Invalid URL format"),
+});
+
 export type InsertRequestLog = z.infer<typeof insertRequestLogSchema>;
 export type RequestLog = typeof requestLogs.$inferSelect;
 export type ParseRequest = z.infer<typeof parseRequestSchema>;
+export type DiscoverRequest = z.infer<typeof discoverRequestSchema>;

@@ -461,6 +461,32 @@
     &quot;format&quot;: &quot;json&quot;
     }&#39;
 </code></pre>
+<h3>Discover Page Structure</h3>
+<p><strong>POST</strong> <code>/api/discover</code></p>
+<p>Analyze a page&#39;s HTML structure to find the most common CSS selectors. Useful for exploring a page before writing parse requests.</p>
+<h4>Request Body</h4>
+<pre><code class="language-json">{
+  &quot;parseURL&quot;: &quot;https://example.com&quot;
+}
+</code></pre>
+<h4>Response</h4>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;data&quot;: {
+    &quot;selectors&quot;: [&quot;div&quot;, &quot;a.nav-link&quot;, &quot;p.content&quot;, &quot;h1#title&quot;, &quot;...&quot;],
+    &quot;sample&quot;: {
+      &quot;h1#title&quot;: &quot;Page Title&quot;,
+      &quot;a.nav-link&quot;: &quot;Home&quot;,
+      &quot;p.content&quot;: &quot;First paragraph text...&quot;
+    }
+  },
+  &quot;meta&quot;: {
+    &quot;url&quot;: &quot;https://example.com&quot;,
+    &quot;selectorCount&quot;: 15
+  }
+}
+</code></pre>
+<p>Returns up to 30 selectors ranked by frequency, with sample text for each. Automatically filters out non-content tags (script, style, etc.) and utility CSS classes.</p>
 <h3>Get Request Logs</h3>
 <p><strong>GET</strong> <code>/api/logs?limit=10</code></p>
 <p>Retrieve recent API request logs for monitoring and debugging. This endpoint is restricted to local access only (localhost) and returns 403 for external requests.</p>

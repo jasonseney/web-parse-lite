@@ -152,6 +152,42 @@ curl -X POST http://localhost:5000/api/parse \
     }'
 ```
 
+### Discover Page Structure
+
+**POST** `/api/discover`
+
+Analyze a page's HTML structure to find the most common CSS selectors. Useful for exploring a page before writing parse requests.
+
+#### Request Body
+
+```json
+{
+  "parseURL": "https://example.com"
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "selectors": ["div", "a.nav-link", "p.content", "h1#title", "..."],
+    "sample": {
+      "h1#title": "Page Title",
+      "a.nav-link": "Home",
+      "p.content": "First paragraph text..."
+    }
+  },
+  "meta": {
+    "url": "https://example.com",
+    "selectorCount": 15
+  }
+}
+```
+
+Returns up to 30 selectors ranked by frequency, with sample text for each. Automatically filters out non-content tags (script, style, etc.) and utility CSS classes.
+
 ### Get Request Logs
 
 **GET** `/api/logs?limit=10`
