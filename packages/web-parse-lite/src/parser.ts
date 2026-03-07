@@ -119,6 +119,31 @@ function isSemanticClass(c: string): boolean {
   if (KNOWN_UTILITY_WORDS.has(c)) return false;
   return true;
 }
+// Tag weights for semantic importance
+const SEMANTIC_TAG_WEIGHT: Record<string, number> = {
+  h1: 10, h2: 9, h3: 8, h4: 7, h5: 6, h6: 6,
+  article: 9, section: 7, main: 8, aside: 6, nav: 5,
+  header: 5, footer: 4,
+  li: 5, ul: 3, ol: 3,
+  figure: 5, figcaption: 5,
+  time: 6, small: 6, blockquote: 7,
+  p: 4, a: 2, span: 1, div: 1, button: 3, img: 3,
+};
+// Scoring function for selectors
+function scoreSelector(tag: string, selector: string, count: number): number {
+  const tagWeight = SEMANTIC_TAG_WEIGHT[tag] ?? 2;
+  const hasClass = selector !== tag ? 3 : 0;  // bonus for having a semantic class
+
+  // Sweet spot: 3-25 occurrences = likely a repeating content unit
+  // Penalize very high counts (nav links, generic wrappers)
+  // Penalize count=1 (one-off layout divs)
+  const countScore =
+    count === 1 ? 0.5 :
+    count <= 25 ? Math.log2(count) + 2 :
+    Math.max(0, 4 - Math.log2(count / 25));  // diminishing past 25
+
+  return tagWeight + hasClass + countScore;
+}
 
 export async function discover(options: DiscoverOptions): Promise<DiscoverResult> {
   const { url, timeout = DEFAULT_TIMEOUT, userAgent = DEFAULT_USER_AGENT } = options;
@@ -137,12 +162,15 @@ export function discoverHtml(html: string): DiscoverResult {
   const counts: Map<string, number> = new Map();
   const samples: Map<string, string> = new Map();
 
+  // Process all elements
   $("*").each((_, el) => {
     const node = $(el);
     const tag = el.type === "tag" ? (el as any).name : null;
     if (!tag || IGNORED_TAGS.has(tag)) return;
 
     const id = node.attr("id");
+  
+    // Filter classes with by checking for semantic patterns
     const classes = (node.attr("class") || "")
       .split(/\s+/)
       .filter(isSemanticClass)  // <-- replaces the old inline filter
@@ -154,16 +182,22 @@ export function discoverHtml(html: string): DiscoverResult {
 
     counts.set(selector, (counts.get(selector) || 0) + 1);
 
+    // Store sample text for the selector
     if (!samples.has(selector)) {
       const text = node.clone().children().remove().end().text().trim().slice(0, 80);
       if (text) samples.set(selector, text);
     }
   });
 
+  // Sort selectors by score and take top 30
   const selectors = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 30)
-    .map(([sel]) => sel);
+  .map(([sel, count]) => {
+    const tag = sel.split(/[.#]/)[0];
+    return { sel, count, score: scoreSelector(tag, sel, count) };
+  })
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 30)
+  .map(({ sel }) => sel);
 
   const sample: Record<string, string> = {};
   for (const sel of selectors) {
